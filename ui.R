@@ -18,32 +18,51 @@ navbarPage("Centroid-Amenities", id="nav",
       # Shiny versions prior to 0.11 should use class = "modal" instead.
       absolutePanel(id = "controls", class = "panel panel-default", fixed = TRUE,
         draggable = TRUE, top = 60, left = "auto", right = 20, bottom = "auto",
-        width = 350, height = "auto",
-
-        h2("Centroid-Amenities Explorer"),
-        
-        selectInput("selectSubzone", "Select Subzone:",  choices = list_subzone$SUBZONE_N , selected = ""),
-        sidebarPanel(id = "slidercontrols", class = "panel panel-default", fixed = TRUE,
-                      draggable = FALSE, bottom = "auto",
-                      width = 300, height = "auto", sliderInput("sliderBuffer",
-                    "Distance to buffer (m):",
-                    min = 0,
-                    max = 500,
-                    value = 50,
-                    step = 25)),
-        numericInput("clusterInput", 
-                     h4("Number of Cluster:"), 
-                     min = 3, max = 20,
-                     value = 3),
-        verbatimTextOutput("value"),
-        #checkboxGroupInput("checkLayers", "Toggle layers to be displayed:",c("Childcare Centres","Eldercare Centres"),""),
-        conditionalPanel( condition = "output.subzoneCheck",
-                          #checkboxGroupInput("checkStats", "Toggle statistics to be displayed:",c("K Means","L Function"),""),
-                          plotOutput("SOS", height = 225),
-                          plotOutput("K_Means", height = 225),
-                          plotOutput("L_Function", height = 225)
-                          )
-        
+        width = 600, height = "auto",
+        fluidRow(
+          column(12,
+            h2("Centroid-Amenities Explorer")
+          ),
+          column(6,
+            selectInput("selectSubzone", "Select Subzone:",  choices = list_subzone$SUBZONE_N , selected = "")
+          ),
+          column(6,
+            numericInput("clusterInput", 
+                         "Number of Cluster:", 
+                         min = 3, max = 20,
+                         value = 3)
+          ),
+          column(12,
+            verbatimTextOutput("value")
+          ),
+          column(12,
+            sidebarPanel(id = "slidercontrols", class = "panel panel-default", fixed = TRUE,
+                          draggable = FALSE, bottom = "auto",
+                          width = 300, height = "auto", sliderInput("sliderBuffer",
+                        "Distance to buffer (m):",
+                        min = 0,
+                        max = 500,
+                        value = 50,
+                        step = 25))
+          ),
+          column(12,
+            #checkboxGroupInput("checkLayers", "Toggle layers to be displayed:",c("Childcare Centres","Eldercare Centres"),""),
+            conditionalPanel( condition = "output.subzoneCheck",
+                              #checkboxGroupInput("checkStats", "Toggle statistics to be displayed:",c("K Means","L Function"),""),
+                              fluidRow(
+                                column(6,
+                                  plotOutput("SOS", height = 225)
+                                ),
+                                column(6,
+                                  plotOutput("K_Means", height = 225)
+                                ),
+                                column(12,
+                                  plotOutput("L_Function", height = 225)
+                                )
+                              )
+            )
+          )
+        )
       )
 
       #tags$div(id="cite",

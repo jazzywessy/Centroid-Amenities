@@ -36,10 +36,12 @@ function(input, output, session) {
       )
   })
   
-  observeEvent(input$selectSubzone, {
+  observeEvent(c(input$selectSubzone,input$clusterInput), {
       # Filter
       subzone_hdb_postal_presch_clean <- subzone_hdb_postal_presch_clean_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
+      subzone_hdb_postal_elder_clean <- subzone_hdb_postal_elder_clean_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
       childcare_geo <- childcare_geo_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
+      eldercare_geo <- eldercare_geo_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
       subzone_pl <- subzone_pl_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
       
       ## K Means ###########################################
@@ -51,7 +53,7 @@ function(input, output, session) {
       set.seed(7)
       
       if(input$clusterInput > 20 || input$clusterInput < 3){
- 
+        
         output$value <- renderText("Number not in range, default 3 clusters will be used")
         km1 <-  kmeans(test, 3, nstart=100)
         
@@ -108,6 +110,13 @@ function(input, output, session) {
         markerColor = 'cadetblue'
       )
       
+      icon_hdb_elder <- awesomeIcons(
+        icon = 'fa-home',
+        iconColor = 'black',
+        library = 'fa',
+        markerColor = 'lightblue'
+      )
+      
       output$map <- renderLeaflet({
         leaflet() %>%
           addProviderTiles("MapBox", options = providerTileOptions(
@@ -135,12 +144,30 @@ function(input, output, session) {
                                           "Pre-Sch living at ",subzone_hdb_postal_presch_clean$`POSTAL`," in 3 Rooms: ", subzone_hdb_postal_presch_clean$`3Room_PreSch_HDB`, "<br>",
                                           "Pre-Sch living at ",subzone_hdb_postal_presch_clean$`POSTAL`," in 4 Rooms: ", subzone_hdb_postal_presch_clean$`4Room_PreSch_HDB`, "<br>",
                                           "Pre-Sch living at ",subzone_hdb_postal_presch_clean$`POSTAL`," in 5 Rooms and Executive: ", subzone_hdb_postal_presch_clean$`5Room_PreSch_HDB`),
-                            group = "HDB") %>%
+                            group = "HDB Kids") %>%
+          addAwesomeMarkers(data=subzone_hdb_postal_elder_clean, icon=icon_hdb_elder,
+                            popup = paste("Planning Area: ", subzone_hdb_postal_elder_clean$`PLN_AREA_N`, "<br>",
+                                          "Subzone: ", subzone_hdb_postal_elder_clean$`SUBZONE_N`, "<br>",
+                                          "Total Population in Subzone: ", subzone_hdb_postal_elder_clean$`TOTAL.x`, "<br>",
+                                          "Total Population living in HDB in Subzone: ", subzone_hdb_postal_elder_clean$`HDB` , "<br>",
+                                          "Total Population of aged 0-4 in Subzone: ", subzone_hdb_postal_elder_clean$`Elder`, "<br>",
+                                          "Total Population of aged 0-4 living in HDB in Subzone: ", subzone_hdb_postal_elder_clean$`Elder_HDB` , "<br>",
+                                          "Postal Code: ", subzone_hdb_postal_elder_clean$`POSTAL` , "<br>",
+                                          "Pre-Sch living at ",subzone_hdb_postal_elder_clean$`POSTAL`," in 1 and 2 Rooms: ", subzone_hdb_postal_elder_clean$`1&2Room_Elder_HDB`, "<br>",
+                                          "Pre-Sch living at ",subzone_hdb_postal_elder_clean$`POSTAL`," in 3 Rooms: ", subzone_hdb_postal_elder_clean$`3Room_Elder_HDB`, "<br>",
+                                          "Pre-Sch living at ",subzone_hdb_postal_elder_clean$`POSTAL`," in 4 Rooms: ", subzone_hdb_postal_elder_clean$`4Room_Elder_HDB`, "<br>",
+                                          "Pre-Sch living at ",subzone_hdb_postal_elder_clean$`POSTAL`," in 5 Rooms and Executive: ", subzone_hdb_postal_elder_clean$`5Room_Elder_HDB`),
+                            group = "HDB Elderly") %>%
           addAwesomeMarkers(data=childcare_geo$geometry, icon=icon_childcare,
                             popup = paste("Planning Area: ", childcare_geo$`PLN_AREA_N`, "<br>",
                                           "Subzone: ", childcare_geo$`SUBZONE_N`, "<br>",
                                           "Childcare Centre Name: ", childcare_geo$`NAME`, "<br>"),
                             group = "Child Care Centres") %>%
+          addAwesomeMarkers(data=eldercare_geo$geometry, icon=icon_childcare,
+                            popup = paste("Planning Area: ", eldercare_geo$`PLN_AREA_N`, "<br>",
+                                          "Subzone: ", eldercare_geo$`SUBZONE_N`, "<br>",
+                                          "Eldercare Centre Name: ", eldercare_geo$`NAME`, "<br>"),
+                            group = "Elder Care Centres") %>%
           addRasterImage(x = childcare_bw_raster, opacity = 0.5, project = FALSE, group = "Kernel Density") %>%
           addPolygons(data=subzone_pl$geometry, weight = 3, fillColor = "brown",popup = paste("Planning Area: ", subzone_pl$`PLN_AREA_N`, "<br>",
                                                                                                "Subzone: ", subzone_pl$`SUBZONE_N`),
@@ -157,7 +184,7 @@ function(input, output, session) {
           addScaleBar(position = "bottomleft") %>%
           addLayersControl(position = "topleft",
             baseGroups = c("Streets", "Light", "Outdoors"),
-            overlayGroups = c("HDB", "Child Care Centres","Kernel Density","Subzone","Buffer","Centriod"),
+            overlayGroups = c("HDB Kids", "HDB Elderly", "Child Care Centres","Elder Care Centres","Kernel Density","Subzone","Buffer","Centriod"),
             options = layersControlOptions(collapsed = FALSE)
           )
       })
@@ -182,7 +209,7 @@ function(input, output, session) {
       output$K_Means <- renderPlot({
 
         #Centriods
-        plot(sayangPlot, col =(sayangPlot +1) , main = paste(input$selectSubzone, " Cluster Centriods"), pch=3, cex=2)
+        plot(sayangPlot, col = palette() , main = paste(input$selectSubzone, " Cluster Centriods"), pch=3, cex=2)
 
       })
       
