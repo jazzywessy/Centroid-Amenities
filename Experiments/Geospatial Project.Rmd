@@ -1,0 +1,150 @@
+---
+title: "Geospatial Project"
+output: html_notebook
+---
+
+#Installing and loading the R packages
+```{r}
+packages = c( 'tmap','tidyverse', 'sp', 'rgdal', 'rgeos', 'sf', 'tmap', 'RColorBrewer', 'classInt', 'DT', 'ClusterR', 'dplyr')
+for (p in packages) {
+  if(!require(p, character.only = T)) {
+    install.packages(p)
+  }
+  library(p,character.only = T)
+}
+```
+
+#Importing spatial data
+```{r}
+subzone_age_gender <- st_read(dsn = "data/data.gov", layer = "SUBZONE_AGE_GENDER_2016")
+subzone_dwelling_type <- st_read(dsn = "data/data.gov", layer = "SUBZONE_DWELLING_TYPE_2016")
+
+subzone_age_gender <- st_transform(subzone_age_gender, 3414)
+subzone_dwelling_type <- st_transform(subzone_dwelling_type, 3414)
+
+subzone_age_gender <- arrange(subzone_age_gender, SUBZONE_N)
+subzone_dwelling_type <- arrange(subzone_dwelling_type, SUBZONE_N)
+
+sgSubZoneMap <- st_read(dsn = "data/data.gov",
+      layer = "MP14_SUBZONE_NO_SEA_PL")
+
+sgSubZoneMap <- st_transform(sgSubZoneMap,3414 )
+
+
+```
+
+#Percentage of children (age 0 - 4) per subzone
+```{r}
+percentageChildrenBySubzone <- mutate(subzone_age_gender, 
+                                     children_pct = BET0TO4 / TOTAL)
+percentageChildrenBySubzone[is.na(percentageChildrenBySubzone)] <- 0
+
+```
+
+#Number of children (age 0 - 4) in HDB dwelling type
+```{r}
+residentsAgeGroupDwellingDetailed <- read_csv("data/data.gov/residents-by-age-group-and-type-of-dwelling-detailed-categories-annual.csv")
+
+numChildrenByHDB2016 <- filter(residentsAgeGroupDwellingDetailed, year == 2016, level_1 == '0-4 Years')
+```
+
+#Number of children (age 0 - 4) living in HDB type by subzone
+```{r}
+subzone_dwelling_type_spatial <- as(subzone_dwelling_type, "Spatial")
+master <- merge(percentageChildrenBySubzone, subzone_dwelling_type_spatial, by = c("SUBZONE_N", "PLN_AREA_N", "TOTAL", "FMEL_UPD_D", "X_ADDR", "Y_ADDR", "SHAPE_Leng", "SHAPE_Area"))
+master <- subset(master, select = -c(OBJECTID.x, OBJECTID.y, INC_CRC.x, INC_CRC.y))
+master <- mutate(master, 
+                 childrenHDB = HDB * children_pct,
+                 children_1_2 = ONE_TO_TWO / HDB * childrenHDB,
+                 children_3 = THREE_RM / HDB * childrenHDB,
+                 children_4 = FOUR_RM / HDB * childrenHDB,
+                 children_5_ex = FIVE_RM_EX / HDB * childrenHDB)
+master[is.na(master)] <- 0
+```
+
+#Find HDBs within each subzone
+```{r}
+HDBTypeSpread <- read_csv("data/HDB_Types/data/HDBTypeSpread.csv")
+HDB_locations_sp <- st_as_sf(HDBTypeSpread, coords = c("X", "Y"), crs = 3414)
+sz_HDB_blocks <- st_join(HDB_locations_sp, master, join = st_intersects)
+sz_HDB_blocks <- arrange(sz_HDB_blocks, SUBZONE_N)
+```
+
+#Breakdown of HDB types in each subzone
+```{r}
+sz_HDB_units_summary <- dplyr::select(as.data.frame(sz_HDB_blocks), -geometry) %>%
+  select('SUBZONE_N', '1-room', '2-room', '3-room', '4-room', '5-room', 'Executive', 'children_pct', 'children_1_2', 'children_3', 'children_4', 'children_5_ex') %>%
+  group_by(SUBZONE_N) %>%
+  summarize(sz_1_2_room_units = sum(`1-room`, `2-room`), sz_3_room_units = sum(`3-room`), sz_4_room_units = sum(`4-room`), sz_5_ex_units = sum(`5-room`, Executive))
+
+```
+
+#Distribute children to each HDB block
+```{r}
+sz_with_HDB <- merge(master, sz_HDB_units_summary, by = "SUBZONE_N")
+sz_with_HDB <- mutate(sz_with_HDB, 
+                      children_per_1_2_room_unit = children_1_2 / sz_1_2_room_units,
+                      children_per_3_room_unit = children_3 / sz_3_room_units,
+                      children_per_4_room_unit = children_4 / sz_4_room_units,
+                      children_per_5_ex_unit = children_5_ex / sz_5_ex_units)
+sz_with_HDB[is.na(sz_with_HDB)] <- 0
+
+children_per_HDB <- dplyr::select(as.data.frame(sz_with_HDB), -geometry) %>%
+  select('SUBZONE_N', 'children_per_1_2_room_unit', 'children_per_3_room_unit', 'children_per_4_room_unit', 'children_per_5_ex_unit')
+  
+children_per_HDB <- merge(sz_HDB_blocks, children_per_HDB, by = "SUBZONE_N")
+children_per_HDB <- mutate(children_per_HDB, 
+                           children_in_1_2_HDB = (X1.room + X2.room) * children_per_1_2_room_unit,
+                           children_in_3_HDB = X3.room * children_per_3_room_unit,
+                           children_in_4_HDB = X4.room * children_per_4_room_unit,
+                           children_in_5_ex_HDB = (X5.room + Executive) * children_per_5_ex_unit,
+                           children_in_HDB_block = children_in_1_2_HDB + 
+                             children_in_3_HDB + 
+                             children_in_4_HDB + 
+                             children_in_5_ex_HDB)
+                             
+```
+
+#Performing k-means analysis
+```{r}
+test <- HDBTypeSpread[, c(13,14)]
+plot(test, main = "HDBs in Singapore", pch =20, cex =2)
+
+# Perform K-Means with 2 clusters
+set.seed(7)
+km1 <-  kmeans(test, 20, nstart=100)
+
+head(km1)
+
+# Plot results
+plot(test, col =(km1$cluster +1) , main="title", pch=20, cex=2)
+
+sayang <- (km1$centers)
+
+plot(sayang, col =(sayang +1) , main="title", pch=20, cex=2)
+
+
+```
+```{r}
+tmap_mode("view")
+
+head(sayang)
+
+sayang <- data.frame(sayang)
+
+sayang <- st_as_sf(sayang, 
+                       coords = c("X", "Y"),
+                       crs = 3414)
+
+tm_shape(sgSubZoneMap) + 
+  tm_borders(alpha = 0.8) +
+  tm_shape(sayang) + 
+    tm_bubbles(
+               contrast=1, 
+               alpha = 0.8, 
+               border.col = "red", 
+               border.alpha = 1,
+               scale = 0.5,
+               )
+```
+
