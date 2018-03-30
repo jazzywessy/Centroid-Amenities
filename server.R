@@ -46,38 +46,28 @@ function(input, output, session) {
       # CRS
       getCRS <- st_crs(childcare_geo)
       
-      # Geometry
-      childcare_geometry <- childcare_geo %>%
-        tidyr:::extract(geometry, c("lng", "lat"), "\\(([^,]+), ([^)]+)\\)")
-
-      childcare_drop_geo <- st_drop_geometry(childcare_geo)
-
-      #Matrix
-      childcare_matrix <- with(childcare_geometry, cbind( as.numeric(lng) , as.numeric(lat)))
-      row.names(childcare_matrix)<- 1:nrow(childcare_matrix)
-
-      hdb_matrix <- with(subzone_hdb_postal_presch_clean, cbind(lng, lat))
-      row.names(hdb_matrix)<- 1:nrow(hdb_matrix)
-
-
-      plot_coord_childcare <- SpatialPointsDataFrame(coords= childcare_matrix, data = childcare_drop_geo, proj4string = CRS(getCRS[['proj4string']]))
-      plot_coord_hdb <- SpatialPointsDataFrame(coords= hdb_matrix, data = subzone_hdb_postal_presch_clean, proj4string = CRS(getCRS[['proj4string']]))
-
-      plot_coord_hdb <- spTransform(plot_coord_hdb,CRS("+init=epsg:4326"))
-      plot_coord_childcare <- spTransform(plot_coord_childcare,CRS("+init=epsg:4326"))
-
-      # Calculate Distance
-      distance.matrix <- matrix(0,nrow(childcare_geo),3,dimnames=list(c(),c("Lat","Lon","DistC")))
-      for(i in 1:nrow(plot_coord_childcare)){
-        sub <- plot_coord_childcare[i,]
-        dist.v <- gDistance(sub,plot_coord_hdb)
-        distance.matrix[i,] <- matrix(c(sub@coords,dist.v),ncol=3)
+      test <- subzone_hdb_postal_presch_clean[, c(16,15)]
+      
+      set.seed(7)
+      
+      if(input$clusterInput > 20 || input$clusterInput < 3){
+ 
+        output$value <- renderText("Number not in range, default 3 clusters will be used")
+        km1 <-  kmeans(test, 3, nstart=100)
+        
+      }else{
+        
+        km1 <-  kmeans(test, input$clusterInput, nstart=100)
       }
-
-      distDF <- as.data.frame(distance.matrix)
-      subzone_childcare_data <-  scale(distDF[,3])
       
+      sayangPlot <- (km1$centers)
+      sayang <- (km1$centers)
       
+      sayang <- data.frame(sayang)
+      
+      sayang <- st_as_sf(sayang,
+                         coords = c("lng", "lat"),
+                         crs = 4326)
       
       ## L Function ###########################################
       # Transform
@@ -103,6 +93,12 @@ function(input, output, session) {
         iconColor = 'black',
         library = 'fa',
         markerColor = 'beige'
+      )
+      icon_centriods_childcare <- awesomeIcons(
+        icon = 'fa-graduation-cap',
+        iconColor = 'black',
+        library = 'fa',
+        markerColor = 'red'
       )
       
       icon_hdb <- awesomeIcons(
@@ -156,10 +152,12 @@ function(input, output, session) {
             stroke = FALSE, fillOpacity = 0.1,
             group = "Buffer"
           ) %>%
+          addAwesomeMarkers(data=sayang, icon=icon_centriods_childcare,
+                            group = "Centriod") %>%
           addScaleBar(position = "bottomleft") %>%
           addLayersControl(position = "topleft",
             baseGroups = c("Streets", "Light", "Outdoors"),
-            overlayGroups = c("HDB", "Child Care Centres","Kernel Density","Subzone","Buffer"),
+            overlayGroups = c("HDB", "Child Care Centres","Kernel Density","Subzone","Buffer","Centriod"),
             options = layersControlOptions(collapsed = FALSE)
           )
       })
@@ -175,21 +173,16 @@ function(input, output, session) {
       })
       
       output$SOS <- renderPlot({
-
-        wss <- (nrow(subzone_childcare_data)-1)*sum(apply(subzone_childcare_data,2,var))
-        for (i in 2:3) wss[i] <- sum(kmeans(subzone_childcare_data,
-                                            centers=i)$withinss)
-        plot(1:3, wss, type="b", xlab="Number of Clusters",
-             ylab="Within groups sum of squares", main = paste(input$selectSubzone, " Sum of square of errors"))
-
+        
+        # Cluster Points
+        plot(test, col =(km1$cluster +1) , main = paste(input$selectSubzone, " Cluster Points"), pch=3, cex=2)
+        
       })
 
       output$K_Means <- renderPlot({
 
-        clust2 <- kmeans(subzone_childcare_data,3)
-        distDF$Clusters <- clust2$cluster
-
-        plot(subzone_childcare_data, col = distDF$Clusters, main = paste(input$selectSubzone, " K Means"))
+        #Centriods
+        plot(sayangPlot, col =(sayangPlot +1) , main = paste(input$selectSubzone, " Cluster Centriods"), pch=3, cex=2)
 
       })
       
