@@ -1,12 +1,5 @@
 library(leaflet)
 library(shinythemes)
-vars <- c(
-  "Is SuperZIP?" = "superzip",
-  "Centile score" = "centile",
-  "College education" = "college",
-  "Median income" = "income",
-  "Population" = "adultpop"
-)
 
 navbarPage("Centroid-Amenities", id="nav",
   theme = shinythemes::shinytheme("united"),
@@ -45,13 +38,6 @@ navbarPage("Centroid-Amenities", id="nav",
                           plotOutput("K_Means", height = 225),
                           plotOutput("L_Function", height = 225)
                           )
-        
-        #selectInput("color", "Color", vars),
-        #selectInput("size", "Size", vars, selected = "adultpop"),
-        #conditionalPanel("input.color == 'superzip' || input.size == 'superzip'",
-          # Only prompt for threshold when coloring or sizing by superzip
-        #  numericInput("threshold", "SuperZIP threshold (top n percentile)", 5)
-        #),
         
       )
 

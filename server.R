@@ -197,21 +197,6 @@ function(input, output, session) {
 
 
   ## Data Explorer ###########################################
-
-  observe({
-    if (is.null(input$goto))
-      return()
-    isolate({
-      map <- leafletProxy("map")
-      map %>% clearPopups()
-      dist <- 0.5
-      zip <- input$goto$zip
-      lat <- input$goto$lat
-      lng <- input$goto$lng
-      showZipcodePopup(zip, lat, lng)
-      map %>% fitBounds(lng - dist, lat - dist, lng + dist, lat + dist)
-    })
-  })
   
   observeEvent(input$selectTable, {
     if(input$selectTable == "children_per_HDB"){
