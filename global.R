@@ -82,6 +82,13 @@ subzone_hdb_postal_presch_clean_unfiltered <- subzone_hdb_postal_presch %>%
   mutate("4Room_PreSch_HDB" = if_else(is.na(`4Room_PreSch_HDB`), 0, round(`4Room_PreSch_HDB` ) )) %>%
   mutate("5Room_PreSch_HDB" = if_else(is.na(`5Room_PreSch_HDB`), 0, round(`5Room_PreSch_HDB` ) ))
 
+subzone_hdb_postal_presch_clean_unfiltered <- subzone_hdb_postal_presch_clean_unfiltered %>%
+  mutate("Total_PreSch_HDB" = (`1&2Room_PreSch_HDB` + `3Room_PreSch_HDB` + `4Room_PreSch_HDB` + `5Room_PreSch_HDB`) )%>%
+  mutate("Total_PreSch_HDB_Scale" = scale(`Total_PreSch_HDB`) )
+# start <- which(colnames(subzone_hdb_postal_presch_clean_unfiltered) == "Total_PreSch_HDB")
+# print(start)
+#end <- which(colnames(subzone_age_gender_dwelling_type) == "OVER85")
+
 ## Eldercare ###########################################
 
 # Data Preparation
@@ -131,7 +138,9 @@ subzone_hdb_postal_elder_clean_unfiltered <- subzone_hdb_postal_elder %>%
   mutate("1&2Room_Elder_HDB" = if_else(is.na(`1&2Room_Elder_HDB`), 0, round(`1&2Room_Elder_HDB` ) )) %>%
   mutate("3Room_Elder_HDB" = if_else(is.na(`3Room_Elder_HDB`), 0, round(`3Room_Elder_HDB` ) )) %>%
   mutate("4Room_Elder_HDB" = if_else(is.na(`4Room_Elder_HDB`), 0, round(`4Room_Elder_HDB` ) )) %>%
-  mutate("5Room_Elder_HDB" = if_else(is.na(`5Room_Elder_HDB`), 0, round(`5Room_Elder_HDB` ) ))
+  mutate("5Room_Elder_HDB" = if_else(is.na(`5Room_Elder_HDB`), 0, round(`5Room_Elder_HDB` ) )) %>%
+  mutate("Total_Elder_HDB" = `1&2Room_Elder_HDB` + `3Room_Elder_HDB` + `4Room_Elder_HDB` + `5Room_Elder_HDB` ) %>%
+  mutate("Total_Elder_HDB_Scale" = scale(`Total_Elder_HDB`) )
 
 # Function
 st_drop_geometry <- function(x) {

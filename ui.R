@@ -23,8 +23,11 @@ navbarPage("Centroid-Amenities", id="nav",
           column(12,
             h2("Centroid-Amenities Explorer")
           ),
+          column(12,
+            selectInput("selectAmenities", "Select Amenities:",  choices = c("Childcare","Eldercare") , selected = "Childcare")
+          ),
           column(6,
-            selectInput("selectSubzone", "Select Subzone:",  choices = list_subzone$SUBZONE_N , selected = "")
+            uiOutput("selectSubzoneOuput")
           ),
           column(6,
             numericInput("clusterInput", 

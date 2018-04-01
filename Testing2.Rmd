@@ -90,11 +90,15 @@ mutate("5Room_Elder_HDB" = (`PercentageX5Ex` / 100) * `5Room_Elder`) %>%
 mutate("1&2Room_Elder_HDB" = if_else(is.na(`1&2Room_Elder_HDB`), 0, round(`1&2Room_Elder_HDB` ) )) %>%
 mutate("3Room_Elder_HDB" = if_else(is.na(`3Room_Elder_HDB`), 0, round(`3Room_Elder_HDB` ) )) %>%
 mutate("4Room_Elder_HDB" = if_else(is.na(`4Room_Elder_HDB`), 0, round(`4Room_Elder_HDB` ) )) %>%
-mutate("5Room_Elder_HDB" = if_else(is.na(`5Room_Elder_HDB`), 0, round(`5Room_Elder_HDB` ) ))
+mutate("5Room_Elder_HDB" = if_else(is.na(`5Room_Elder_HDB`), 0, round(`5Room_Elder_HDB` ) )) %>%
+  mutate("Total_Elder_HDB" = `1&2Room_Elder_HDB` + `3Room_Elder_HDB` + `4Room_Elder_HDB` + `5Room_Elder_HDB` )
 #dplyr:::select(`POSTAL`,`SUBZONE_N`, `PLN_AREA_N`,`1&2Room_Elder_HDB`,`3Room_Elder_HDB`,`4Room_Elder_HDB`,`5Room_Elder_HDB`)
   #select(`POSTAL`,`SUBZONE_N`, `PLN_AREA_N`,`1&2Room_PreSch`,`X1X2Room`,`1&2Room_PreSch_HDB`,`3Room_PreSch`,`X3room`,`3Room_PreSch_HDB`,`4Room_PreSch`,`X4room`,`4Room_PreSch_HDB`,`5Room_PreSch`,`X5ExRoom`,`5Room_PreSch_HDB`)
 # as.numeric(as.character(subzone_hdb_postal_presch_clean$lng[1]))
 # as.numeric(as.character(subzone_hdb_postal_presch_clean$lat[1]))
+scalenum <- scale(subzone_hdb_postal_elder_clean$Total_Elder_HDB)
+scalenum
+      #pal = colorNumeric(colorRamp(c('green', 'red')), subzone_hdb_postal_elder_clean$Total_Elder_HDB )
 ```
 
 ```{r}
