@@ -84,10 +84,13 @@ subzone_hdb_postal_presch_clean_unfiltered <- subzone_hdb_postal_presch %>%
 
 subzone_hdb_postal_presch_clean_unfiltered <- subzone_hdb_postal_presch_clean_unfiltered %>%
   mutate("Total_PreSch_HDB" = (`1&2Room_PreSch_HDB` + `3Room_PreSch_HDB` + `4Room_PreSch_HDB` + `5Room_PreSch_HDB`) )%>%
-  mutate("Total_PreSch_HDB_Scale" = scale(`Total_PreSch_HDB`) )
-# start <- which(colnames(subzone_hdb_postal_presch_clean_unfiltered) == "Total_PreSch_HDB")
+  mutate("Total_PreSch_HDB" = as.numeric(as.character(`Total_PreSch_HDB`)) ) %>%
+  mutate("Total_PreSch_HDB_Scale" = scale(`Total_PreSch_HDB`) ) %>%
+  dplyr:::select(`POSTAL`,`SUBZONE_N`, `PLN_AREA_N`,`1&2Room_PreSch_HDB`,`3Room_PreSch_HDB`,`4Room_PreSch_HDB`,`5Room_PreSch_HDB`,`lng`,`lat`,`Total_PreSch_HDB`,`Total_PreSch_HDB_Scale`,`TOTAL.x`,`HDB`,`Preschool`,`PreSch_HDB`)
+# start <- which(colnames(subzone_hdb_postal_presch_clean_unfiltered) == "lat")
+# end <- which(colnames(subzone_hdb_postal_presch_clean_unfiltered) == "lng")
 # print(start)
-#end <- which(colnames(subzone_age_gender_dwelling_type) == "OVER85")
+# print(end)
 
 ## Eldercare ###########################################
 
@@ -140,7 +143,9 @@ subzone_hdb_postal_elder_clean_unfiltered <- subzone_hdb_postal_elder %>%
   mutate("4Room_Elder_HDB" = if_else(is.na(`4Room_Elder_HDB`), 0, round(`4Room_Elder_HDB` ) )) %>%
   mutate("5Room_Elder_HDB" = if_else(is.na(`5Room_Elder_HDB`), 0, round(`5Room_Elder_HDB` ) )) %>%
   mutate("Total_Elder_HDB" = `1&2Room_Elder_HDB` + `3Room_Elder_HDB` + `4Room_Elder_HDB` + `5Room_Elder_HDB` ) %>%
-  mutate("Total_Elder_HDB_Scale" = scale(`Total_Elder_HDB`) )
+  mutate("Total_Elder_HDB" = as.numeric(as.character(`Total_Elder_HDB`)) ) %>%
+  mutate("Total_Elder_HDB_Scale" = scale(`Total_Elder_HDB`) )%>%
+  dplyr:::select(`POSTAL`,`SUBZONE_N`, `PLN_AREA_N`,`1&2Room_Elder_HDB`,`3Room_Elder_HDB`,`4Room_Elder_HDB`,`5Room_Elder_HDB`,`lng`,`lat`,`Total_Elder_HDB`,`Total_Elder_HDB_Scale`,`TOTAL.x`,`HDB`,`Elder`,`Elder_HDB`)
 
 # Function
 st_drop_geometry <- function(x) {

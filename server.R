@@ -13,6 +13,7 @@ library(scales)
 library(lattice)
 library(leaflet.extras)
 library(magrittr)
+library(flexclust)
 
 function(input, output, session) {
   ## Interactive Map ###########################################
@@ -47,83 +48,16 @@ function(input, output, session) {
   })
   
   observeEvent(c(input$selectSubzone,input$clusterInput), {
-      # Filter
-      subzone_hdb_postal_presch_clean <- subzone_hdb_postal_presch_clean_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
-      subzone_hdb_postal_elder_clean <- subzone_hdb_postal_elder_clean_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
-      childcare_geo <- childcare_geo_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
-      eldercare_geo <- eldercare_geo_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
+    
+    output$subzoneCheck <- reactive({
+      input$selectSubzone
+    })
+    outputOptions(output, "subzoneCheck", suspendWhenHidden = FALSE) 
+    
+    # Filter
       subzone_pl <- subzone_pl_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
       
-      
-      ## K Means ###########################################
-      # CRS
-      getCRS <- st_crs(childcare_geo)
-      
-      test <- subzone_hdb_postal_presch_clean[, c(16,15,97)]
-      #A <- subzone_hdb_postal_presch_clean[subzone_hdb_postal_presch_clean[, 97], c(16:15)]
-      set.seed(7)
-      
-      if(input$clusterInput > 20 || input$clusterInput < 3){
-        
-        output$value <- renderText("Number not in range, default 3 clusters will be used")
-        km1 <-  kmeans(test, 3, nstart=100)
-        
-      }else{
-        
-        km1 <-  kmeans(test, input$clusterInput, nstart=100)
-      }
-      
-      sayangPlot <- (km1$centers)
-      sayang <- (km1$centers)
-      
-      sayang <- data.frame(sayang)
-      
-      sayang <- st_as_sf(sayang,
-                         coords = c("lng", "lat"),
-                         crs = 4326)
-      
-      test2 <- subzone_hdb_postal_elder_clean[, c(16,15,97)]
-      
-      set.seed(7)
-      
-      if(input$clusterInput > 20 || input$clusterInput < 3){
-        
-        output$value <- renderText("Number not in range, default 3 clusters will be used")
-        km2 <-  kmeans(test2, 3, nstart=100)
-        
-      }else{
-        
-        km2 <-  kmeans(test2, input$clusterInput, nstart=100)
-      }
-      
-      sayangPlot2 <- (km2$centers)
-      sayang2 <- (km2$centers)
-      
-      sayang2 <- data.frame(sayang2)
-      
-      sayang2 <- st_as_sf(sayang2,
-                         coords = c("lng", "lat"),
-                         crs = 4326)
-      
-      ## L Function ###########################################
-      # Transform
-      subzone_sp <-  sf:::as_Spatial(subzone_pl$geometry)
-      childcare_sp <-  sf:::as_Spatial(childcare_geo$geometry)
-      
-      childcare_sp <- as(childcare_sp, "SpatialPoints")
-      subzone_sp <- as(subzone_sp, "SpatialPolygons")
-      
-      # ppp object
-      owin <- as(subzone_sp, "owin")
-      childcare_ppp <- as(childcare_sp, "ppp")
-      childcare_ppp$window <- owin
-      
-      # Create raster
-      childcare_bw <- density(childcare_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
-      childcare_bw_raster <- raster(childcare_bw)
-      raster::projection(childcare_bw_raster) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
-      
-      # Create icon
+    # Create icon
       icon_eldercare <- awesomeIcons(
         icon = 'fa-building-o',
         iconColor = 'black',
@@ -167,6 +101,66 @@ function(input, output, session) {
       )
       
       if (input$selectAmenities == "Childcare"){
+        
+        
+        # Filter
+        subzone_hdb_postal_presch_clean <- subzone_hdb_postal_presch_clean_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
+        childcare_geo <- childcare_geo_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
+        
+        
+        ## K Means ###########################################
+        # CRS
+        getCRS <- st_crs(childcare_geo)
+        
+        test <- subzone_hdb_postal_presch_clean[, c(8,9)]
+        #test <- subzone_hdb_postal_presch_clean[, c(16,15,97)]
+        # print(test)
+        # set.seed(7)
+        
+        if(input$clusterInput > 20 || input$clusterInput < 3){
+          
+          output$value <- renderText("Number not in range, default 3 clusters will be used")
+          # km1 <-  kmeans(test, 3, nstart=100)
+          km1 <- cclust(test, k=3, save.data=FALSE,weights = subzone_hdb_postal_presch_clean$Total_PreSch_HDB,method="hardcl")
+          
+        }else{
+          
+          # km1 <-  kmeans(test, input$clusterInput, nstart=100)
+          km1 <- cclust(test, k=as.numeric(as.character(input$clusterInput)), save.data=FALSE,weights = subzone_hdb_postal_presch_clean$Total_PreSch_HDB,method="hardcl")
+        }
+        
+        
+        sayangPlot <- (km1@centers)
+        sayang <- (km1@centers)
+        # print(sayang)
+        
+        sayang <- data.frame(sayang)
+        
+        sayang <- st_as_sf(sayang,
+                           coords = c("lng", "lat"),
+                           crs = 4326)
+        print(sayang)
+        
+        ## L Function ###########################################
+        # Transform
+        subzone_sp <-  sf:::as_Spatial(subzone_pl$geometry)
+        childcare_sp <-  sf:::as_Spatial(childcare_geo$geometry)
+        
+        childcare_sp <- as(childcare_sp, "SpatialPoints")
+        subzone_sp <- as(subzone_sp, "SpatialPolygons")
+        
+        # ppp object
+        owin <- as(subzone_sp, "owin")
+        childcare_ppp <- as(childcare_sp, "ppp")
+        childcare_ppp$window <- owin
+        
+        # Create raster
+        childcare_bw <- density(childcare_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+        childcare_bw_raster <- raster(childcare_bw)
+        raster::projection(childcare_bw_raster) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
+        
+        ## Leaflet ###########################################
+        
         output$map <- renderLeaflet({
           leaflet() %>%
             addProviderTiles("MapBox", options = providerTileOptions(
@@ -232,7 +226,7 @@ function(input, output, session) {
         output$SOS <- renderPlot({
           
           # Cluster Points
-          plot(test, col =(km1$cluster +1) , main = paste(input$selectSubzone, " Cluster Points"), pch=3, cex=2)
+          plot(test, col =(km1@cluster +1) , main = paste(input$selectSubzone, " Cluster Points"), pch=3, cex=2)
           
         })
         
@@ -244,6 +238,42 @@ function(input, output, session) {
         })
         
       } else if (input$selectAmenities == "Eldercare"){
+        
+        
+        # Filter
+        subzone_hdb_postal_elder_clean <- subzone_hdb_postal_elder_clean_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
+        eldercare_geo <- eldercare_geo_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
+        
+        # test2 <- subzone_hdb_postal_elder_clean[, c(16,15,97)]
+        test2 <- subzone_hdb_postal_elder_clean[, c(8,9)]
+        # print(test2)
+        # set.seed(7)
+        
+        if(input$clusterInput > 20 || input$clusterInput < 3){
+          
+          output$value <- renderText("Number not in range, default 3 clusters will be used")
+          # km2 <-  kmeans(test2, 3, nstart=100)
+          km2 <- cclust(test2, k=3, save.data=FALSE,weights = subzone_hdb_postal_elder_clean$Total_Elder_HDB,method="hardcl")
+          
+        }else{
+          
+          # km2 <-  kmeans(test2, input$clusterInput, nstart=100)
+          km2 <- cclust(test2, k=as.numeric(as.character(input$clusterInput)), save.data=FALSE,weights = subzone_hdb_postal_elder_clean$Total_Elder_HDB,method="hardcl")
+        }
+        
+        sayangPlot2 <- (km2@centers)
+        sayang2 <- (km2@centers)
+        # print(sayang2)
+        
+        sayang2 <- data.frame(sayang2)
+        
+        sayang2 <- st_as_sf(sayang2,
+                            coords = c("lng", "lat"),
+                            crs = 4326)
+        print(sayang2)
+        
+        ## Leaflet ###########################################
+        
         output$map <- renderLeaflet({
           leaflet() %>%
             addProviderTiles("MapBox", options = providerTileOptions(
@@ -290,7 +320,7 @@ function(input, output, session) {
             addAwesomeMarkers(data=sayang2, icon=icon_centriods_eldercare,
                               group = "Centriod") %>%
             addHeatmap(data= subzone_hdb_postal_elder_clean, lng = ~lng, lat = ~lat, intensity = ~Total_Elder_HDB_Scale,
-                        blur = 20, radius = 15, group = "Heatmap") %>%
+                       blur = 20, radius = 15, group = "Heatmap") %>%
             addScaleBar(position = "bottomleft") %>%
             addLayersControl(position = "topleft",
                              baseGroups = c("Streets", "Light", "Outdoors"),
@@ -302,7 +332,7 @@ function(input, output, session) {
         output$SOS <- renderPlot({
           
           # Cluster Points
-          plot(test2, col =(km2$cluster +1) , main = paste(input$selectSubzone, " Cluster Points"), pch=3, cex=2)
+          plot(test2, col =(km2@cluster +1) , main = paste(input$selectSubzone, " Cluster Points"), pch=3, cex=2)
           
         })
         
@@ -318,12 +348,6 @@ function(input, output, session) {
         })
         
       }
-      
-      
-      output$subzoneCheck <- reactive({
-        input$selectSubzone
-      })
-      outputOptions(output, "subzoneCheck", suspendWhenHidden = FALSE) 
       
       
   }, ignoreInit = TRUE, ignoreNULL = TRUE)

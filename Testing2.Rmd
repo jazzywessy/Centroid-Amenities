@@ -4,7 +4,7 @@ output: html_document
 ---
 
 ```{r}
-packages = c('rgdal', 'maptools', 'spatstat', 'tmap','raster','tidyverse','sf', 'RColorBrewer', 'classInt','leaflet','ClusterR','rgeos')
+packages = c('rgdal', 'maptools', 'spatstat', 'tmap','raster','tidyverse','sf', 'RColorBrewer', 'classInt','leaflet','ClusterR','rgeos','WeightedCluster','geosphere','dismo','flexclust')
 for (p in packages){
 if(!require(p, character.only = T)){
 install.packages(p)
@@ -91,14 +91,62 @@ mutate("1&2Room_Elder_HDB" = if_else(is.na(`1&2Room_Elder_HDB`), 0, round(`1&2Ro
 mutate("3Room_Elder_HDB" = if_else(is.na(`3Room_Elder_HDB`), 0, round(`3Room_Elder_HDB` ) )) %>%
 mutate("4Room_Elder_HDB" = if_else(is.na(`4Room_Elder_HDB`), 0, round(`4Room_Elder_HDB` ) )) %>%
 mutate("5Room_Elder_HDB" = if_else(is.na(`5Room_Elder_HDB`), 0, round(`5Room_Elder_HDB` ) )) %>%
-  mutate("Total_Elder_HDB" = `1&2Room_Elder_HDB` + `3Room_Elder_HDB` + `4Room_Elder_HDB` + `5Room_Elder_HDB` )
-#dplyr:::select(`POSTAL`,`SUBZONE_N`, `PLN_AREA_N`,`1&2Room_Elder_HDB`,`3Room_Elder_HDB`,`4Room_Elder_HDB`,`5Room_Elder_HDB`)
+  mutate("Total_Elder_HDB" = `1&2Room_Elder_HDB` + `3Room_Elder_HDB` + `4Room_Elder_HDB` + `5Room_Elder_HDB` )%>%
+  mutate("Total_Elder_HDB_Scale" = scale(Total_Elder_HDB) )%>%
+dplyr:::select(`POSTAL`,`SUBZONE_N`, `PLN_AREA_N`,`1&2Room_Elder_HDB`,`3Room_Elder_HDB`,`4Room_Elder_HDB`,`5Room_Elder_HDB`,`lng`,`lat`,`Total_Elder_HDB`,`Total_Elder_HDB_Scale`)
   #select(`POSTAL`,`SUBZONE_N`, `PLN_AREA_N`,`1&2Room_PreSch`,`X1X2Room`,`1&2Room_PreSch_HDB`,`3Room_PreSch`,`X3room`,`3Room_PreSch_HDB`,`4Room_PreSch`,`X4room`,`4Room_PreSch_HDB`,`5Room_PreSch`,`X5ExRoom`,`5Room_PreSch_HDB`)
 # as.numeric(as.character(subzone_hdb_postal_presch_clean$lng[1]))
 # as.numeric(as.character(subzone_hdb_postal_presch_clean$lat[1]))
-scalenum <- scale(subzone_hdb_postal_elder_clean$Total_Elder_HDB)
-scalenum
+# scalenum <- scale(subzone_hdb_postal_elder_clean$Total_Elder_HDB)
+# scalenum
       #pal = colorNumeric(colorRamp(c('green', 'red')), subzone_hdb_postal_elder_clean$Total_Elder_HDB )
+```
+
+```{r}
+subzone_hdb_postal_elder_clean_unfiltered <- subzone_hdb_postal_elder_clean %>% filter(`SUBZONE_N` == "ALJUNIED")
+#KAMPONG TIONG BAHRU
+subzone <- st_read(dsn = "data", layer = "MP14_SUBZONE_NO_SEA_PL")
+
+subzone_filter <- subzone %>%
+filter(SUBZONE_N == "ALJUNIED")
+
+#subzone_hdb_postal_presch_clean_unfiltered.seq <- seqdef(subzone_hdb_postal_presch_clean_unfiltered[, c(8:9)])
+
+# COmpute distance using Hamming distance
+#diss <- seqdist(subzone_hdb_postal_presch_clean_unfiltered.seq, method="HAM")
+
+test <- subzone_hdb_postal_elder_clean_unfiltered[,c(8,9)]
+testt <- subzone_hdb_postal_elder_clean_unfiltered[,c(10)]
+
+
+xy <- SpatialPointsDataFrame(test, data.frame(ID=seq(1:length(subzone_hdb_postal_elder_clean_unfiltered$lng))),
+      proj4string=CRS("+proj=longlat +ellps=WGS84 +datum=WGS84"))
+
+# use the distm function to generate a geodesic distance matrix in meters
+mdist <- distm(xy)
+
+cl <- cclust(test, k=3, save.data=TRUE,weights = subzone_hdb_postal_elder_clean_unfiltered$Total_Elder_HDB,method="hardcl")
+
+sayang <- (cl@centers)
+sayang
+
+sayang <- data.frame(sayang)
+
+sayang <- st_as_sf(sayang,
+                   coords = c("lng", "lat"),
+                   crs = 4326)
+plot(sayang)
+tm_shape(subzone_filter) +
+  tm_borders(alpha = 0.8) +
+  tm_shape(sayang) +
+    tm_bubbles(
+               contrast=1,
+               alpha = 0.8,
+               border.col = "red",
+               border.alpha = 1,
+               scale = 0.5
+               )
+
 ```
 
 ```{r}
