@@ -113,33 +113,26 @@ function(input, output, session) {
         getCRS <- st_crs(childcare_geo)
         
         test <- subzone_hdb_postal_presch_clean[, c(8,9)]
-        #test <- subzone_hdb_postal_presch_clean[, c(16,15,97)]
-        # print(test)
-        # set.seed(7)
         
         if(input$clusterInput > 20 || input$clusterInput < 3){
           
           output$value <- renderText("Number not in range, default 3 clusters will be used")
-          # km1 <-  kmeans(test, 3, nstart=100)
           km1 <- cclust(test, k=3, save.data=FALSE,weights = subzone_hdb_postal_presch_clean$Total_PreSch_HDB,method="hardcl")
           
         }else{
           
-          # km1 <-  kmeans(test, input$clusterInput, nstart=100)
           km1 <- cclust(test, k=as.numeric(as.character(input$clusterInput)), save.data=FALSE,weights = subzone_hdb_postal_presch_clean$Total_PreSch_HDB,method="hardcl")
         }
         
         
         sayangPlot <- (km1@centers)
         sayang <- (km1@centers)
-        # print(sayang)
         
         sayang <- data.frame(sayang)
         
         sayang <- st_as_sf(sayang,
                            coords = c("lng", "lat"),
                            crs = 4326)
-        print(sayang)
         
         ## L Function ###########################################
         # Transform
@@ -244,33 +237,44 @@ function(input, output, session) {
         subzone_hdb_postal_elder_clean <- subzone_hdb_postal_elder_clean_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
         eldercare_geo <- eldercare_geo_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
         
-        # test2 <- subzone_hdb_postal_elder_clean[, c(16,15,97)]
         test2 <- subzone_hdb_postal_elder_clean[, c(8,9)]
-        # print(test2)
-        # set.seed(7)
         
         if(input$clusterInput > 20 || input$clusterInput < 3){
           
           output$value <- renderText("Number not in range, default 3 clusters will be used")
-          # km2 <-  kmeans(test2, 3, nstart=100)
           km2 <- cclust(test2, k=3, save.data=FALSE,weights = subzone_hdb_postal_elder_clean$Total_Elder_HDB,method="hardcl")
           
         }else{
           
-          # km2 <-  kmeans(test2, input$clusterInput, nstart=100)
           km2 <- cclust(test2, k=as.numeric(as.character(input$clusterInput)), save.data=FALSE,weights = subzone_hdb_postal_elder_clean$Total_Elder_HDB,method="hardcl")
         }
         
         sayangPlot2 <- (km2@centers)
         sayang2 <- (km2@centers)
-        # print(sayang2)
         
         sayang2 <- data.frame(sayang2)
         
         sayang2 <- st_as_sf(sayang2,
                             coords = c("lng", "lat"),
                             crs = 4326)
-        print(sayang2)
+        
+        ## L Function ###########################################
+        # Transform
+        subzone_sp <-  sf:::as_Spatial(subzone_pl$geometry)
+        eldercare_sp <-  sf:::as_Spatial(eldercare_geo$geometry)
+        
+        eldercare_sp <- as(eldercare_sp, "SpatialPoints")
+        subzone_sp <- as(subzone_sp, "SpatialPolygons")
+        
+        # ppp object
+        owin <- as(subzone_sp, "owin")
+        eldercare_ppp <- as(eldercare_sp, "ppp")
+        eldercare_ppp$window <- owin
+        
+        # Create raster
+        eldercare_bw <- density(eldercare_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
+        eldercare_bw_raster <- raster(eldercare_bw)
+        raster::projection(eldercare_bw_raster) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
         
         ## Leaflet ###########################################
         
@@ -307,6 +311,7 @@ function(input, output, session) {
                                             "Subzone: ", eldercare_geo$`SUBZONE_N`, "<br>",
                                             "Eldercare Centre Name: ", eldercare_geo$`NAME`, "<br>"),
                               group = "Elder Care Centres") %>%
+            addRasterImage(x = eldercare_bw_raster, opacity = 0.5, project = FALSE, group = "Kernel Density") %>%
             addPolygons(data=subzone_pl$geometry, weight = 3, fillColor = "brown",popup = paste("Planning Area: ", subzone_pl$`PLN_AREA_N`, "<br>",
                                                                                                 "Subzone: ", subzone_pl$`SUBZONE_N`),
                         group = "Subzone") %>%
@@ -324,7 +329,7 @@ function(input, output, session) {
             addScaleBar(position = "bottomleft") %>%
             addLayersControl(position = "topleft",
                              baseGroups = c("Streets", "Light", "Outdoors"),
-                             overlayGroups = c("HDB Elderly","Elder Care Centres","Subzone","Buffer","Centriod","Heatmap"),
+                             overlayGroups = c("HDB Elderly","Elder Care Centres","Kernel Density","Subzone","Buffer","Centriod","Heatmap"),
                              options = layersControlOptions(collapsed = FALSE)
             )
         })
@@ -344,7 +349,9 @@ function(input, output, session) {
         })
         
         output$L_Function <- renderPlot({
-          plot(sayangPlot2, col = palette() , main = paste(input$selectSubzone, " Cluster Centriods"), pch=3, cex=2)
+          # plot(sayangPlot2, col = palette() , main = paste(input$selectSubzone, " Cluster Centriods"), pch=3, cex=2)
+          eldercare_L <- Lest(eldercare_ppp, correction="Ripley")
+          plot(eldercare_L, main = paste(input$selectSubzone, " Eldercare L Funtion"))
         })
         
       }
