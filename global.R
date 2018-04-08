@@ -87,6 +87,8 @@ subzone_hdb_postal_presch_clean_unfiltered <- subzone_hdb_postal_presch_clean_un
   mutate("Total_PreSch_HDB" = as.numeric(as.character(`Total_PreSch_HDB`)) ) %>%
   mutate("Total_PreSch_HDB_Scale" = scale(`Total_PreSch_HDB`) ) %>%
   dplyr:::select(`POSTAL`,`SUBZONE_N`, `PLN_AREA_N`,`1&2Room_PreSch_HDB`,`3Room_PreSch_HDB`,`4Room_PreSch_HDB`,`5Room_PreSch_HDB`,`lng`,`lat`,`Total_PreSch_HDB`,`Total_PreSch_HDB_Scale`,`TOTAL.x`,`HDB`,`Preschool`,`PreSch_HDB`)
+
+# geometryTest <- subzone_hdb_postal_presch_clean_unfiltered[, c(8,9)]
 # start <- which(colnames(subzone_hdb_postal_presch_clean_unfiltered) == "lat")
 # end <- which(colnames(subzone_hdb_postal_presch_clean_unfiltered) == "lng")
 # print(start)

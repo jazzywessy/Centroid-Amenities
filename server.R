@@ -11,9 +11,8 @@ library(rgeos)
 library(ClusterR)
 library(scales)
 library(lattice)
-library(leaflet.extras)
-library(magrittr)
 library(flexclust)
+library(SpatialAcc)
 
 function(input, output, session) {
   ## Interactive Map ###########################################
@@ -102,12 +101,53 @@ function(input, output, session) {
       
       if (input$selectAmenities == "Childcare"){
         
-        
         # Filter
         subzone_hdb_postal_presch_clean <- subzone_hdb_postal_presch_clean_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
         childcare_geo <- childcare_geo_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
+        childcare_geo$supply <- sample(10:150, nrow(childcare_geo))
         
         
+        ## Heatmap ###########################################
+        # Transform 
+        geometryTest <- st_as_sf(subzone_hdb_postal_presch_clean, coords = c("lng", "lat"),crs = 4326)
+        subzone_sp <-  sf:::as_Spatial(subzone_pl$geometry) 
+        childcare_sp <-  sf:::as_Spatial(geometryTest$geometry) 
+        
+        childcare_sp <- as(childcare_sp, "SpatialPoints") 
+        subzone_sp <- as(subzone_sp, "SpatialPolygons") 
+        
+        # ppp object 
+        owin <- as(subzone_sp, "owin") 
+        childcare_ppp <- as(childcare_sp, "ppp") 
+        childcare_ppp$window <- owin 
+        
+        # Create raster 
+        childcare_bw <- density(childcare_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian", weights = geometryTest$Total_PreSch_HDB) 
+        childcare_bw_raster <- raster(childcare_bw) 
+        raster::projection(childcare_bw_raster) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0") 
+        
+        ## Hansen ###########################################
+        # Extract 
+        childcare_pl_geo <- childcare_geo %>% 
+          extract(col = geometry, c('lng', 'lat'), '\\(([^,]+), ([^)]+)\\)')
+        
+        GR.C_Coords <-cbind(as.numeric(as.character(childcare_pl_geo$lng)),as.numeric(as.character(childcare_pl_geo$lat)))
+        GR.H_Coords <-cbind(subzone_hdb_postal_presch_clean$lng, subzone_hdb_postal_presch_clean$lat)
+        
+        GR.d <- distance(GR.H_Coords, GR.C_Coords)
+        GR.d100 <- GR.d / 100000
+        
+        # set limit to 50m no any further than
+        GR.acc <- ac(subzone_hdb_postal_presch_clean$Total_PreSch_HDB,
+                     childcare_pl_geo$supply,
+                     GR.d100, d0 = 50,
+                     power = 2, family = "Hansen")
+        
+        print(GR.acc)
+        
+        
+        GR.acc1 <- data.frame(subzone_hdb_postal_presch_clean[,c(1,8,9)],
+                              GR.acc)
         ## K Means ###########################################
         # CRS
         getCRS <- st_crs(childcare_geo)
@@ -133,24 +173,6 @@ function(input, output, session) {
         sayang <- st_as_sf(sayang,
                            coords = c("lng", "lat"),
                            crs = 4326)
-        
-        ## L Function ###########################################
-        # Transform
-        subzone_sp <-  sf:::as_Spatial(subzone_pl$geometry)
-        childcare_sp <-  sf:::as_Spatial(childcare_geo$geometry)
-        
-        childcare_sp <- as(childcare_sp, "SpatialPoints")
-        subzone_sp <- as(subzone_sp, "SpatialPolygons")
-        
-        # ppp object
-        owin <- as(subzone_sp, "owin")
-        childcare_ppp <- as(childcare_sp, "ppp")
-        childcare_ppp$window <- owin
-        
-        # Create raster
-        childcare_bw <- density(childcare_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
-        childcare_bw_raster <- raster(childcare_bw)
-        raster::projection(childcare_bw_raster) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
         
         ## Leaflet ###########################################
         
@@ -187,34 +209,23 @@ function(input, output, session) {
                                             "Subzone: ", childcare_geo$`SUBZONE_N`, "<br>",
                                             "Childcare Centre Name: ", childcare_geo$`NAME`, "<br>"),
                               group = "Child Care Centres") %>%
-            addRasterImage(x = childcare_bw_raster, opacity = 0.5, project = FALSE, group = "Kernel Density") %>%
             addPolygons(data=subzone_pl$geometry, weight = 3, fillColor = "brown",popup = paste("Planning Area: ", subzone_pl$`PLN_AREA_N`, "<br>",
                                                                                                 "Subzone: ", subzone_pl$`SUBZONE_N`),
                         group = "Subzone") %>%
-            addCircleMarkers(
-              data=childcare_geo$geometry,
-              radius = input$sliderBuffer,
-              color = "navy",
-              stroke = FALSE, fillOpacity = 0.1,
-              group = "Buffer"
-            ) %>%
             addAwesomeMarkers(data=sayang, icon=icon_centriods_childcare,
                               group = "Centriod") %>%
-            addHeatmap(data= subzone_hdb_postal_presch_clean, lng = ~lng, lat = ~lat, intensity = ~Total_PreSch_HDB_Scale,
-                       blur = 20, radius = 15, group = "Heatmap") %>%
+            addRasterImage(x = childcare_bw_raster, opacity = 0.5, project = FALSE, group = "Heatmap") %>%
+            addCircles(data = GR.acc1, lng= ~lng, lat= ~lat, weight= 1,
+                       radius = ~sqrt(GR.acc) * 10,
+                       popup = ~POSTAL, group = "Hansen") %>%
             addScaleBar(position = "bottomleft") %>%
             addLayersControl(position = "topleft",
                              baseGroups = c("Streets", "Light", "Outdoors"),
-                             overlayGroups = c("HDB Kids", "Child Care Centres","Kernel Density","Subzone","Buffer","Centriod","Heatmap"),
+                             overlayGroups = c("HDB Kids", "Child Care Centres","Subzone","Centriod","Heatmap","Hansen"),
                              options = layersControlOptions(collapsed = FALSE)
             )
         })
         
-        
-        output$L_Function <- renderPlot({
-          childcare_L <- Lest(childcare_ppp, correction="Ripley")
-          plot(childcare_L, main = paste(input$selectSubzone, " Childcare L Funtion"))
-        })
         
         output$SOS <- renderPlot({
           
@@ -258,24 +269,6 @@ function(input, output, session) {
                             coords = c("lng", "lat"),
                             crs = 4326)
         
-        ## L Function ###########################################
-        # Transform
-        subzone_sp <-  sf:::as_Spatial(subzone_pl$geometry)
-        eldercare_sp <-  sf:::as_Spatial(eldercare_geo$geometry)
-        
-        eldercare_sp <- as(eldercare_sp, "SpatialPoints")
-        subzone_sp <- as(subzone_sp, "SpatialPolygons")
-        
-        # ppp object
-        owin <- as(subzone_sp, "owin")
-        eldercare_ppp <- as(eldercare_sp, "ppp")
-        eldercare_ppp$window <- owin
-        
-        # Create raster
-        eldercare_bw <- density(eldercare_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian")
-        eldercare_bw_raster <- raster(eldercare_bw)
-        raster::projection(eldercare_bw_raster) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0")
-        
         ## Leaflet ###########################################
         
         output$map <- renderLeaflet({
@@ -311,17 +304,9 @@ function(input, output, session) {
                                             "Subzone: ", eldercare_geo$`SUBZONE_N`, "<br>",
                                             "Eldercare Centre Name: ", eldercare_geo$`NAME`, "<br>"),
                               group = "Elder Care Centres") %>%
-            addRasterImage(x = eldercare_bw_raster, opacity = 0.5, project = FALSE, group = "Kernel Density") %>%
             addPolygons(data=subzone_pl$geometry, weight = 3, fillColor = "brown",popup = paste("Planning Area: ", subzone_pl$`PLN_AREA_N`, "<br>",
                                                                                                 "Subzone: ", subzone_pl$`SUBZONE_N`),
                         group = "Subzone") %>%
-            addCircleMarkers(
-              data=eldercare_geo$geometry,
-              radius = input$sliderBuffer,
-              color = "navy",
-              stroke = FALSE, fillOpacity = 0.1,
-              group = "Buffer"
-            ) %>%
             addAwesomeMarkers(data=sayang2, icon=icon_centriods_eldercare,
                               group = "Centriod") %>%
             addHeatmap(data= subzone_hdb_postal_elder_clean, lng = ~lng, lat = ~lat, intensity = ~Total_Elder_HDB_Scale,
@@ -329,7 +314,7 @@ function(input, output, session) {
             addScaleBar(position = "bottomleft") %>%
             addLayersControl(position = "topleft",
                              baseGroups = c("Streets", "Light", "Outdoors"),
-                             overlayGroups = c("HDB Elderly","Elder Care Centres","Kernel Density","Subzone","Buffer","Centriod","Heatmap"),
+                             overlayGroups = c("HDB Elderly","Elder Care Centres","Subzone","Centriod","Heatmap"),
                              options = layersControlOptions(collapsed = FALSE)
             )
         })
@@ -346,12 +331,6 @@ function(input, output, session) {
           #Centriods
           plot(sayangPlot2, col = palette() , main = paste(input$selectSubzone, " Cluster Centriods"), pch=3, cex=2)
           
-        })
-        
-        output$L_Function <- renderPlot({
-          # plot(sayangPlot2, col = palette() , main = paste(input$selectSubzone, " Cluster Centriods"), pch=3, cex=2)
-          eldercare_L <- Lest(eldercare_ppp, correction="Ripley")
-          plot(eldercare_L, main = paste(input$selectSubzone, " Eldercare L Funtion"))
         })
         
       }

@@ -39,19 +39,8 @@ navbarPage("Centroid-Amenities", id="nav",
             verbatimTextOutput("value")
           ),
           column(12,
-            sidebarPanel(id = "slidercontrols", class = "panel panel-default", fixed = TRUE,
-                          draggable = FALSE, bottom = "auto",
-                          width = 300, height = "auto", sliderInput("sliderBuffer",
-                        "Distance to buffer (m):",
-                        min = 0,
-                        max = 500,
-                        value = 50,
-                        step = 25))
-          ),
-          column(12,
             #checkboxGroupInput("checkLayers", "Toggle layers to be displayed:",c("Childcare Centres","Eldercare Centres"),""),
             conditionalPanel( condition = "output.subzoneCheck",
-                              #checkboxGroupInput("checkStats", "Toggle statistics to be displayed:",c("K Means","L Function"),""),
                               fluidRow(
                                 column(6,
                                   plotOutput("SOS", height = 225)
@@ -60,7 +49,7 @@ navbarPage("Centroid-Amenities", id="nav",
                                   plotOutput("K_Means", height = 225)
                                 ),
                                 column(12,
-                                  plotOutput("L_Function", height = 225)
+                                  plotOutput("Hist", height = 225)
                                 )
                               )
             )
