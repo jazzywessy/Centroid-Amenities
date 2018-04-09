@@ -13,6 +13,7 @@ library(scales)
 library(lattice)
 library(flexclust)
 library(SpatialAcc)
+library(RColorBrewer)
 
 function(input, output, session) {
   ## Interactive Map ###########################################
@@ -46,7 +47,7 @@ function(input, output, session) {
     }
   })
   
-  observeEvent(c(input$selectSubzone,input$clusterInput), {
+  observeEvent(c(input$selectSubzone,input$clusterInput,input$supplyInput), {
     
     output$subzoneCheck <- reactive({
       input$selectSubzone
@@ -104,9 +105,41 @@ function(input, output, session) {
         # Filter
         subzone_hdb_postal_presch_clean <- subzone_hdb_postal_presch_clean_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
         childcare_geo <- childcare_geo_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
-        childcare_geo$supply <- sample(10:150, nrow(childcare_geo))
+        childcare_geo$supply <- input$supplyInput
+        # childcare_geo$supply <- sample(30:100, nrow(childcare_geo))
+        
+        ## Hansen ###########################################
+        # Extract 
+        childcare_pl_geo <- childcare_geo %>% 
+          extract(col = geometry, c('lng', 'lat'), '\\(([^,]+), ([^)]+)\\)')
+        
+        childcare_pl_geo <- LongLatToUTM(as.numeric(as.character(childcare_pl_geo$lng)),as.numeric(as.character(childcare_pl_geo$lat)),48)
+        subzone_hdb_postal_presch_clean_pl <- LongLatToUTM(subzone_hdb_postal_presch_clean$lng,subzone_hdb_postal_presch_clean$lat,48)
         
         
+        GR.C_Coords <-cbind(as.numeric(as.character(childcare_pl_geo$X)),as.numeric(as.character(childcare_pl_geo$Y)))
+        GR.H_Coords <-cbind(subzone_hdb_postal_presch_clean_pl$X, subzone_hdb_postal_presch_clean_pl$Y)
+        
+        GR.d <- SpatialAcc::distance(GR.H_Coords, GR.C_Coords, type = "euclidean")
+        GR.d100 <- GR.d / 100000
+        
+        # print(GR.d)
+        # set limit to 100m no any further than
+        GR.acc <- ac(p = subzone_hdb_postal_presch_clean$Total_PreSch_HDB,
+                     childcare_geo$supply,
+                     GR.d100, d0 = 100,
+                     power = 2, family = "Hansen")
+        
+        
+        GR.acc1 <- data.frame(subzone_hdb_postal_presch_clean[,c(1,8,9)],
+                              GR.acc)
+        
+        pal <- colorFactor(
+          palette = 'Greens',
+          domain = GR.acc
+        )
+        
+        # print(GR.acc1)
         ## Heatmap ###########################################
         # Transform 
         geometryTest <- st_as_sf(subzone_hdb_postal_presch_clean, coords = c("lng", "lat"),crs = 4326)
@@ -126,28 +159,7 @@ function(input, output, session) {
         childcare_bw_raster <- raster(childcare_bw) 
         raster::projection(childcare_bw_raster) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0") 
         
-        ## Hansen ###########################################
-        # Extract 
-        childcare_pl_geo <- childcare_geo %>% 
-          extract(col = geometry, c('lng', 'lat'), '\\(([^,]+), ([^)]+)\\)')
         
-        GR.C_Coords <-cbind(as.numeric(as.character(childcare_pl_geo$lng)),as.numeric(as.character(childcare_pl_geo$lat)))
-        GR.H_Coords <-cbind(subzone_hdb_postal_presch_clean$lng, subzone_hdb_postal_presch_clean$lat)
-        
-        GR.d <- distance(GR.H_Coords, GR.C_Coords)
-        GR.d100 <- GR.d / 100000
-        
-        # set limit to 50m no any further than
-        GR.acc <- ac(subzone_hdb_postal_presch_clean$Total_PreSch_HDB,
-                     childcare_pl_geo$supply,
-                     GR.d100, d0 = 50,
-                     power = 2, family = "Hansen")
-        
-        print(GR.acc)
-        
-        
-        GR.acc1 <- data.frame(subzone_hdb_postal_presch_clean[,c(1,8,9)],
-                              GR.acc)
         ## K Means ###########################################
         # CRS
         getCRS <- st_crs(childcare_geo)
@@ -170,6 +182,31 @@ function(input, output, session) {
         
         sayang <- data.frame(sayang)
         
+        # print(sayang)
+        sayang$supply <- input$supplyInput
+        # sayang$supply <- sample(30:100, nrow(sayang))
+        sayang_pl <- LongLatToUTM(as.numeric(as.character(sayang$lng)),as.numeric(as.character(sayang$lat)),48)
+        sayang.C_Coords <-cbind(sayang_pl$X,sayang_pl$Y)
+        
+        sayang.d <- SpatialAcc::distance(GR.H_Coords, sayang.C_Coords, type = "euclidean")
+        sayang.d100 <- sayang.d / 100000
+        
+        # print(sayang.d)
+        # set limit to 100m no any further than
+        sayang.acc <- ac(subzone_hdb_postal_presch_clean$Total_PreSch_HDB,
+                     sayang$supply,
+                     sayang.d100, d0 = 100,
+                     power = 2, family = "Hansen")
+        
+        
+        sayang.acc1 <- data.frame(subzone_hdb_postal_presch_clean[,c(1,8,9)],
+                              sayang.acc)
+        
+        pal2 <- colorFactor(
+          palette = 'Blues',
+          domain = sayang.acc
+        )
+        # print(sayang.acc1)
         sayang <- st_as_sf(sayang,
                            coords = c("lng", "lat"),
                            crs = 4326)
@@ -194,10 +231,6 @@ function(input, output, session) {
             addAwesomeMarkers(data=subzone_hdb_postal_presch_clean, icon=icon_hdb,
                               popup = paste("Planning Area: ", subzone_hdb_postal_presch_clean$`PLN_AREA_N`, "<br>",
                                             "Subzone: ", subzone_hdb_postal_presch_clean$`SUBZONE_N`, "<br>",
-                                            "Total Population in Subzone: ", subzone_hdb_postal_presch_clean$`TOTAL.x`, "<br>",
-                                            "Total Population living in HDB in Subzone: ", subzone_hdb_postal_presch_clean$`HDB` , "<br>",
-                                            "Total Population of aged 0-4 in Subzone: ", subzone_hdb_postal_presch_clean$`Preschool`, "<br>",
-                                            "Total Population of aged 0-4 living in HDB in Subzone: ", subzone_hdb_postal_presch_clean$`PreSch_HDB` , "<br>",
                                             "Postal Code: ", subzone_hdb_postal_presch_clean$`POSTAL` , "<br>",
                                             "Pre-Sch living at ",subzone_hdb_postal_presch_clean$`POSTAL`," in 1 and 2 Rooms: ", subzone_hdb_postal_presch_clean$`1&2Room_PreSch_HDB`, "<br>",
                                             "Pre-Sch living at ",subzone_hdb_postal_presch_clean$`POSTAL`," in 3 Rooms: ", subzone_hdb_postal_presch_clean$`3Room_PreSch_HDB`, "<br>",
@@ -217,13 +250,16 @@ function(input, output, session) {
             addRasterImage(x = childcare_bw_raster, opacity = 0.5, project = FALSE, group = "Heatmap") %>%
             addCircles(data = GR.acc1, lng= ~lng, lat= ~lat, weight= 1,
                        radius = ~sqrt(GR.acc) * 10,
-                       popup = ~POSTAL, group = "Hansen") %>%
+                       popup = ~POSTAL, color = ~pal(GR.acc), group = "Current Hansen") %>%
+            addCircles(data = sayang.acc1, lng= ~lng, lat= ~lat, weight= 1,
+                       radius = ~sqrt(sayang.acc) * 10,
+                       popup = ~POSTAL, color = ~pal2(sayang.acc), group = "Suggested Hansen") %>%
             addScaleBar(position = "bottomleft") %>%
             addLayersControl(position = "topleft",
                              baseGroups = c("Streets", "Light", "Outdoors"),
-                             overlayGroups = c("HDB Kids", "Child Care Centres","Subzone","Centriod","Heatmap","Hansen"),
+                             overlayGroups = c("HDB Kids", "Child Care Centres","Subzone","Centriod","Heatmap","Current Hansen","Suggested Hansen"),
                              options = layersControlOptions(collapsed = FALSE)
-            )
+            )%>% hideGroup(c("HDB Kids","Current Hansen","Suggested Hansen"))
         })
         
         
@@ -241,13 +277,83 @@ function(input, output, session) {
           
         })
         
+        output$CurrentHist <- renderPlot({
+          
+          #Centriods
+          plot(hist(GR.acc), main = paste(input$selectSubzone, " Current Amenities"))
+          
+        })
+        
+        output$AfterHist <- renderPlot({
+          
+          #Centriods
+          plot(hist(sayang.acc), main = paste(input$selectSubzone, " Suggested Amenities"))
+          
+        })
+        
+        output$CurrentAvg <- renderText(mean(GR.acc))
+        output$AfterAvg <- renderText(mean(sayang.acc))
+        
+        
       } else if (input$selectAmenities == "Eldercare"){
         
         
         # Filter
         subzone_hdb_postal_elder_clean <- subzone_hdb_postal_elder_clean_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
         eldercare_geo <- eldercare_geo_unfiltered %>% filter(`SUBZONE_N` == input$selectSubzone)
+        eldercare_geo$supply <- input$supplyInput
+        ## Hansen ###########################################
+        # Extract 
+        eldercare_pl_geo <- eldercare_geo %>% 
+          extract(col = geometry, c('lng', 'lat'), '\\(([^,]+), ([^)]+)\\)')
         
+        eldercare_pl_geo <- LongLatToUTM(as.numeric(as.character(eldercare_pl_geo$lng)),as.numeric(as.character(eldercare_pl_geo$lat)),48)
+        subzone_hdb_postal_elder_clean_pl <- LongLatToUTM(subzone_hdb_postal_elder_clean$lng,subzone_hdb_postal_elder_clean$lat,48)
+        
+        
+        GR.C_Coords <-cbind(as.numeric(as.character(eldercare_pl_geo$X)),as.numeric(as.character(eldercare_pl_geo$Y)))
+        GR.H_Coords <-cbind(subzone_hdb_postal_elder_clean_pl$X, subzone_hdb_postal_elder_clean_pl$Y)
+        
+        GR.d <- SpatialAcc::distance(GR.H_Coords, GR.C_Coords, type = "euclidean")
+        GR.d100 <- GR.d / 100000
+        
+        # print(GR.d)
+        # set limit to 100m no any further than
+        GR.acc <- ac(p = subzone_hdb_postal_elder_clean$Total_Elder_HDB,
+                     eldercare_geo$supply,
+                     GR.d100, d0 = 100,
+                     power = 2, family = "Hansen")
+        
+        
+        GR.acc1 <- data.frame(subzone_hdb_postal_elder_clean[,c(1,8,9)],
+                              GR.acc)
+        
+        pal <- colorFactor(
+          palette = 'Greens',
+          domain = GR.acc
+        )
+        
+        ## Heatmap ###########################################
+        # Transform 
+        geometryTest <- st_as_sf(subzone_hdb_postal_elder_clean, coords = c("lng", "lat"),crs = 4326)
+        subzone_sp <-  sf:::as_Spatial(subzone_pl$geometry) 
+        eldercare_sp <-  sf:::as_Spatial(geometryTest$geometry) 
+        
+        eldercare_sp <- as(eldercare_sp, "SpatialPoints") 
+        subzone_sp <- as(subzone_sp, "SpatialPolygons") 
+        
+        # ppp object 
+        owin <- as(subzone_sp, "owin") 
+        eldercare_ppp <- as(eldercare_sp, "ppp") 
+        eldercare_ppp$window <- owin 
+        
+        # Create raster 
+        eldercare_bw <- density(eldercare_ppp, sigma=bw.diggle, edge=TRUE, kernel="gaussian", weights = geometryTest$Total_Elder_HDB) 
+        eldercare_bw_raster <- raster(eldercare_bw) 
+        raster::projection(eldercare_bw_raster) <- sp::CRS("+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs +towgs84=0,0,0") 
+        
+        
+        ## K Means ###########################################
         test2 <- subzone_hdb_postal_elder_clean[, c(8,9)]
         
         if(input$clusterInput > 20 || input$clusterInput < 3){
@@ -264,6 +370,31 @@ function(input, output, session) {
         sayang2 <- (km2@centers)
         
         sayang2 <- data.frame(sayang2)
+        
+        # print(sayang)
+        sayang2$supply <- input$supplyInput
+        # sayang$supply <- sample(30:100, nrow(sayang))
+        sayang_pl <- LongLatToUTM(as.numeric(as.character(sayang2$lng)),as.numeric(as.character(sayang2$lat)),48)
+        sayang.C_Coords <-cbind(sayang_pl$X,sayang_pl$Y)
+        
+        sayang.d <- SpatialAcc::distance(GR.H_Coords, sayang.C_Coords, type = "euclidean")
+        sayang.d100 <- sayang.d / 100000
+        
+        # print(sayang.d)
+        # set limit to 100m no any further than
+        sayang.acc <- ac(subzone_hdb_postal_elder_clean$Total_Elder_HDB,
+                         sayang2$supply,
+                         sayang.d100, d0 = 100,
+                         power = 2, family = "Hansen")
+        
+        
+        sayang.acc1 <- data.frame(subzone_hdb_postal_elder_clean[,c(1,8,9)],
+                                  sayang.acc)
+        
+        pal2 <- colorFactor(
+          palette = 'Blues',
+          domain = sayang.acc
+        )
         
         sayang2 <- st_as_sf(sayang2,
                             coords = c("lng", "lat"),
@@ -289,10 +420,6 @@ function(input, output, session) {
             addAwesomeMarkers(data=subzone_hdb_postal_elder_clean , icon=icon_hdb_elder,
                               popup = paste("Planning Area: ", subzone_hdb_postal_elder_clean$`PLN_AREA_N`, "<br>",
                                             "Subzone: ", subzone_hdb_postal_elder_clean$`SUBZONE_N`, "<br>",
-                                            "Total Population in Subzone: ", subzone_hdb_postal_elder_clean$`TOTAL.x`, "<br>",
-                                            "Total Population living in HDB in Subzone: ", subzone_hdb_postal_elder_clean$`HDB` , "<br>",
-                                            "Total Population of Elderly in Subzone: ", subzone_hdb_postal_elder_clean$`Elder`, "<br>",
-                                            "Total Population of Elderly living in HDB in Subzone: ", subzone_hdb_postal_elder_clean$`Elder_HDB` , "<br>",
                                             "Postal Code: ", subzone_hdb_postal_elder_clean$`POSTAL` , "<br>",
                                             "Elderly living at ",subzone_hdb_postal_elder_clean$`POSTAL`," in 1 and 2 Rooms: ", subzone_hdb_postal_elder_clean$`1&2Room_Elder_HDB`, "<br>",
                                             "Elderly living at ",subzone_hdb_postal_elder_clean$`POSTAL`," in 3 Rooms: ", subzone_hdb_postal_elder_clean$`3Room_Elder_HDB`, "<br>",
@@ -309,14 +436,19 @@ function(input, output, session) {
                         group = "Subzone") %>%
             addAwesomeMarkers(data=sayang2, icon=icon_centriods_eldercare,
                               group = "Centriod") %>%
-            addHeatmap(data= subzone_hdb_postal_elder_clean, lng = ~lng, lat = ~lat, intensity = ~Total_Elder_HDB_Scale,
-                       blur = 20, radius = 15, group = "Heatmap") %>%
+            addRasterImage(x = eldercare_bw_raster, opacity = 0.5, project = FALSE, group = "Demand Heatmap") %>%
+            addCircles(data = GR.acc1, lng= ~lng, lat= ~lat, weight= 1,
+                       radius = ~sqrt(GR.acc) * 10,
+                       popup = ~POSTAL, color = ~pal(GR.acc), group = "Current Hansen") %>%
+            addCircles(data = sayang.acc1, lng= ~lng, lat= ~lat, weight= 1,
+                       radius = ~sqrt(sayang.acc) * 10,
+                       popup = ~POSTAL, color = ~pal2(sayang.acc), group = "Suggested Hansen") %>%
             addScaleBar(position = "bottomleft") %>%
             addLayersControl(position = "topleft",
                              baseGroups = c("Streets", "Light", "Outdoors"),
-                             overlayGroups = c("HDB Elderly","Elder Care Centres","Subzone","Centriod","Heatmap"),
+                             overlayGroups = c("HDB Elderly","Elder Care Centres","Subzone","Centriod","Demand Heatmap","Current Hansen","Suggested Hansen"),
                              options = layersControlOptions(collapsed = FALSE)
-            )
+            )%>% hideGroup(c("HDB Elderly","Current Hansen","Suggested Hansen"))
         })
         
         output$SOS <- renderPlot({
@@ -332,6 +464,24 @@ function(input, output, session) {
           plot(sayangPlot2, col = palette() , main = paste(input$selectSubzone, " Cluster Centriods"), pch=3, cex=2)
           
         })
+        
+        
+        output$CurrentHist <- renderPlot({
+          
+          #Centriods
+          plot(hist(GR.acc), main = paste(input$selectSubzone, " Current Amenities"))
+          
+        })
+        
+        output$AfterHist <- renderPlot({
+          
+          #Centriods
+          plot(hist(sayang.acc), main = paste(input$selectSubzone, " Suggested Amenities"))
+          
+        })
+        
+        output$CurrentAvg <- renderText(mean(GR.acc))
+        output$AfterAvg <- renderText(mean(sayang.acc))
         
       }
       

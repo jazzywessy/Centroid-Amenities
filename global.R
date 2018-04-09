@@ -1,5 +1,6 @@
 library(dplyr)
 library(sf)
+library(sp)
 library(rgdal)
 
 token <- "pk.eyJ1IjoianNjczI2MDciLCJhIjoicFhiM1hJTSJ9.VBD0_KEXWrrEbW21L0uYGw"
@@ -156,4 +157,12 @@ st_drop_geometry <- function(x) {
     class(x) <- 'data.frame'
   }
   return(x)
+}
+
+LongLatToUTM<-function(x,y,zone){
+  xy <- data.frame(ID = 1:length(x), X = x, Y = y)
+  coordinates(xy) <- c("X", "Y")
+  proj4string(xy) <- CRS("+proj=longlat +datum=WGS84")  ## for example
+  res <- sp::spTransform(xy, CRS(paste("+proj=utm +zone=",zone," ellps=WGS84",sep='')))
+  return(as.data.frame(res))
 }

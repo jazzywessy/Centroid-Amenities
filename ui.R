@@ -26,6 +26,11 @@ navbarPage("Centroid-Amenities", id="nav",
           column(12,
             selectInput("selectAmenities", "Select Amenities:",  choices = c("Childcare","Eldercare") , selected = "Childcare")
           ),
+          column(12,
+            numericInput("supplyInput", "Number of Supply:", 
+                              min = 10, max = 150,
+                              value = 20)
+          ),
           column(6,
             uiOutput("selectSubzoneOuput")
           ),
@@ -48,8 +53,19 @@ navbarPage("Centroid-Amenities", id="nav",
                                 column(6,
                                   plotOutput("K_Means", height = 225)
                                 ),
-                                column(12,
-                                  plotOutput("Hist", height = 225)
+                                column(6,
+                                  plotOutput("CurrentHist", height = 225)
+                                ),
+                                column(6,
+                                  plotOutput("AfterHist", height = 225)
+                                ),
+                                column(6,
+                                       h3("Current Avg. Distance"),
+                                  verbatimTextOutput("CurrentAvg")
+                                ),
+                                column(6,
+                                       h3("Suggested Avg. Distance"),
+                                  verbatimTextOutput("AfterAvg")
                                 )
                               )
             )

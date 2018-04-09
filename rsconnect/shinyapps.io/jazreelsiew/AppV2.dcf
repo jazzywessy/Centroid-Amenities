@@ -5,9 +5,9 @@ account: jazreelsiew
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 309397
-bundleId: 1297932
+bundleId: 1308340
 url: https://jazreelsiew.shinyapps.io/AppV2/
-when: 1522680091.76092
+when: 1523200775.72778
 asMultiple: FALSE
 asStatic: FALSE
-ignoredFiles: Experiments
+ignoredFiles: Testing2.Rmd|Experiments
