@@ -274,14 +274,14 @@ function(input, output, session) {
         output$CurrentHist <- renderPlot({
           
           #Centriods
-          plot(hist(CurrentAmenities.acc), main = paste(input$selectSubzone, " Current Accessibility"))
+          plot(hist(CurrentAmenities.acc), main = paste(input$selectSubzone, " Current Distance"))
           
         })
         
         output$AfterHist <- renderPlot({
           
           #Centriods
-          plot(hist(ImprovedPlacement.acc), main = paste(input$selectSubzone, " Improved Accessibility"))
+          plot(hist(ImprovedPlacement.acc), main = paste(input$selectSubzone, " Improved Distance"))
           
         })
         
