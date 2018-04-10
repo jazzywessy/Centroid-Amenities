@@ -111,29 +111,29 @@ function(input, output, session) {
         subzone_hdb_postal_presch_clean_pl <- LongLatToUTM(subzone_hdb_postal_presch_clean$lng,subzone_hdb_postal_presch_clean$lat,48)
         
         
-        CurrAmenities.C_Coords <-cbind(as.numeric(as.character(childcare_pl_geo$X)),as.numeric(as.character(childcare_pl_geo$Y)))
-        CurrAmenities.H_Coords <-cbind(subzone_hdb_postal_presch_clean_pl$X, subzone_hdb_postal_presch_clean_pl$Y)
+        CurrentAmenities.C_Coords <-cbind(as.numeric(as.character(childcare_pl_geo$X)),as.numeric(as.character(childcare_pl_geo$Y)))
+        CurrentAmenities.H_Coords <-cbind(subzone_hdb_postal_presch_clean_pl$X, subzone_hdb_postal_presch_clean_pl$Y)
         
-        CurrAmenities.d <- SpatialAcc::distance(CurrAmenities.H_Coords, CurrAmenities.C_Coords, type = "euclidean")
-        CurrAmenities.d100 <- CurrAmenities.d / 100000
+        CurrentAmenities.d <- SpatialAcc::distance(CurrentAmenities.H_Coords, CurrentAmenities.C_Coords, type = "euclidean")
+        CurrentAmenities.d100 <- CurrentAmenities.d / 100000
         
-        # print(CurrAmenities.d)
+        # print(CurrentAmenities.d)
         # set limit to 100m no any further than
-        CurrAmenities.acc <- ac(p = subzone_hdb_postal_presch_clean$Total_PreSch_HDB,
+        CurrentAmenities.acc <- ac(p = subzone_hdb_postal_presch_clean$Total_PreSch_HDB,
                      childcare_geo$supply,
-                     CurrAmenities.d100, d0 = 100,
+                     CurrentAmenities.d100, d0 = 100,
                      power = 2, family = "Hansen")
         
         
-        CurrAmenities.acc1 <- data.frame(subzone_hdb_postal_presch_clean[,c(1,8,9)],
-                              CurrAmenities.acc)
+        CurrentAmenities.acc1 <- data.frame(subzone_hdb_postal_presch_clean[,c(1,8,9)],
+                              CurrentAmenities.acc)
         
         pal <- colorFactor(
           palette = 'Greens',
-          domain = CurrAmenities.acc
+          domain = CurrentAmenities.acc
         )
         
-        # print(CurrAmenities.acc1)
+        # print(CurrentAmenities.acc1)
         ## Heatmap ###########################################
         # Transform 
         geometryTest <- st_as_sf(subzone_hdb_postal_presch_clean, coords = c("lng", "lat"),crs = 4326)
@@ -182,7 +182,7 @@ function(input, output, session) {
         ImprovedPlacement_pl <- LongLatToUTM(as.numeric(as.character(ImprovedPlacement$lng)),as.numeric(as.character(ImprovedPlacement$lat)),48)
         ImprovedPlacement.C_Coords <-cbind(ImprovedPlacement_pl$X,ImprovedPlacement_pl$Y)
         
-        ImprovedPlacement.d <- SpatialAcc::distance(CurrAmenities.H_Coords, ImprovedPlacement.C_Coords, type = "euclidean")
+        ImprovedPlacement.d <- SpatialAcc::distance(CurrentAmenities.H_Coords, ImprovedPlacement.C_Coords, type = "euclidean")
         ImprovedPlacement.d100 <- ImprovedPlacement.d / 100000
         
         # print(ImprovedPlacement.d)
@@ -242,9 +242,9 @@ function(input, output, session) {
             addAwesomeMarkers(data=ImprovedPlacement, icon=icon_centriods_childcare,
                               group = "Centriod") %>%
             addRasterImage(x = childcare_bw_raster, opacity = 0.5, project = FALSE, group = "Heatmap") %>%
-            addCircles(data = CurrAmenities.acc1, lng= ~lng, lat= ~lat, weight= 1,
-                       radius = ~sqrt(CurrAmenities.acc) * 10,
-                       popup = ~POSTAL, color = ~pal(CurrAmenities.acc), group = "Current Hansen") %>%
+            addCircles(data = CurrentAmenities.acc1, lng= ~lng, lat= ~lat, weight= 1,
+                       radius = ~sqrt(CurrentAmenities.acc) * 10,
+                       popup = ~POSTAL, color = ~pal(CurrentAmenities.acc), group = "Current Hansen") %>%
             addCircles(data = ImprovedPlacement.acc1, lng= ~lng, lat= ~lat, weight= 1,
                        radius = ~sqrt(ImprovedPlacement.acc) * 10,
                        popup = ~POSTAL, color = ~pal2(ImprovedPlacement.acc), group = "Suggested Hansen") %>%
@@ -274,18 +274,18 @@ function(input, output, session) {
         output$CurrentHist <- renderPlot({
           
           #Centriods
-          plot(hist(CurrAmenities.acc), main = paste(input$selectSubzone, " Current Amenities"))
+          plot(hist(CurrentAmenities.acc), main = paste(input$selectSubzone, " Current Accessibility"))
           
         })
         
         output$AfterHist <- renderPlot({
           
           #Centriods
-          plot(hist(ImprovedPlacement.acc), main = paste(input$selectSubzone, " Suggested Amenities"))
+          plot(hist(ImprovedPlacement.acc), main = paste(input$selectSubzone, " Improved Accessibility"))
           
         })
         
-        output$CurrentAvg <- renderText(mean(CurrAmenities.acc))
+        output$CurrentAvg <- renderText(mean(CurrentAmenities.acc))
         output$AfterAvg <- renderText(mean(ImprovedPlacement.acc))
         
         
@@ -305,26 +305,26 @@ function(input, output, session) {
         subzone_hdb_postal_elder_clean_pl <- LongLatToUTM(subzone_hdb_postal_elder_clean$lng,subzone_hdb_postal_elder_clean$lat,48)
         
         
-        CurrAmenities.C_Coords <-cbind(as.numeric(as.character(eldercare_pl_geo$X)),as.numeric(as.character(eldercare_pl_geo$Y)))
-        CurrAmenities.H_Coords <-cbind(subzone_hdb_postal_elder_clean_pl$X, subzone_hdb_postal_elder_clean_pl$Y)
+        CurrentAmenities.C_Coords <-cbind(as.numeric(as.character(eldercare_pl_geo$X)),as.numeric(as.character(eldercare_pl_geo$Y)))
+        CurrentAmenities.H_Coords <-cbind(subzone_hdb_postal_elder_clean_pl$X, subzone_hdb_postal_elder_clean_pl$Y)
         
-        CurrAmenities.d <- SpatialAcc::distance(CurrAmenities.H_Coords, CurrAmenities.C_Coords, type = "euclidean")
-        CurrAmenities.d100 <- CurrAmenities.d / 100000
+        CurrentAmenities.d <- SpatialAcc::distance(CurrentAmenities.H_Coords, CurrentAmenities.C_Coords, type = "euclidean")
+        CurrentAmenities.d100 <- CurrentAmenities.d / 100000
         
-        # print(CurrAmenities.d)
+        # print(CurrentAmenities.d)
         # set limit to 100m no any further than
-        CurrAmenities.acc <- ac(p = subzone_hdb_postal_elder_clean$Total_Elder_HDB,
+        CurrentAmenities.acc <- ac(p = subzone_hdb_postal_elder_clean$Total_Elder_HDB,
                      eldercare_geo$supply,
-                     CurrAmenities.d100, d0 = 100,
+                     CurrentAmenities.d100, d0 = 100,
                      power = 2, family = "Hansen")
         
         
-        CurrAmenities.acc1 <- data.frame(subzone_hdb_postal_elder_clean[,c(1,8,9)],
-                              CurrAmenities.acc)
+        CurrentAmenities.acc1 <- data.frame(subzone_hdb_postal_elder_clean[,c(1,8,9)],
+                              CurrentAmenities.acc)
         
         pal <- colorFactor(
           palette = 'Greens',
-          domain = CurrAmenities.acc
+          domain = CurrentAmenities.acc
         )
         
         ## Heatmap ###########################################
@@ -371,7 +371,7 @@ function(input, output, session) {
         ImprovedPlacement_pl <- LongLatToUTM(as.numeric(as.character(ImprovedPlacement2$lng)),as.numeric(as.character(ImprovedPlacement2$lat)),48)
         ImprovedPlacement.C_Coords <-cbind(ImprovedPlacement_pl$X,ImprovedPlacement_pl$Y)
         
-        ImprovedPlacement.d <- SpatialAcc::distance(CurrAmenities.H_Coords, ImprovedPlacement.C_Coords, type = "euclidean")
+        ImprovedPlacement.d <- SpatialAcc::distance(CurrentAmenities.H_Coords, ImprovedPlacement.C_Coords, type = "euclidean")
         ImprovedPlacement.d100 <- ImprovedPlacement.d / 100000
         
         # print(ImprovedPlacement.d)
@@ -431,9 +431,9 @@ function(input, output, session) {
             addAwesomeMarkers(data=ImprovedPlacement2, icon=icon_centriods_eldercare,
                               group = "Centriod") %>%
             addRasterImage(x = eldercare_bw_raster, opacity = 0.5, project = FALSE, group = "Demand Heatmap") %>%
-            addCircles(data = CurrAmenities.acc1, lng= ~lng, lat= ~lat, weight= 1,
-                       radius = ~sqrt(CurrAmenities.acc) * 10,
-                       popup = ~POSTAL, color = ~pal(CurrAmenities.acc), group = "Current Hansen") %>%
+            addCircles(data = CurrentAmenities.acc1, lng= ~lng, lat= ~lat, weight= 1,
+                       radius = ~sqrt(CurrentAmenities.acc) * 10,
+                       popup = ~POSTAL, color = ~pal(CurrentAmenities.acc), group = "Current Hansen") %>%
             addCircles(data = ImprovedPlacement.acc1, lng= ~lng, lat= ~lat, weight= 1,
                        radius = ~sqrt(ImprovedPlacement.acc) * 10,
                        popup = ~POSTAL, color = ~pal2(ImprovedPlacement.acc), group = "Suggested Hansen") %>%
@@ -463,7 +463,7 @@ function(input, output, session) {
         output$CurrentHist <- renderPlot({
           
           #Centriods
-          plot(hist(CurrAmenities.acc), main = paste(input$selectSubzone, " Current Amenities"))
+          plot(hist(CurrentAmenities.acc), main = paste(input$selectSubzone, " Current Amenities"))
           
         })
         
@@ -474,7 +474,7 @@ function(input, output, session) {
           
         })
         
-        output$CurrentAvg <- renderText(mean(CurrAmenities.acc))
+        output$CurrentAvg <- renderText(mean(CurrentAmenities.acc))
         output$AfterAvg <- renderText(mean(ImprovedPlacement.acc))
         
       }

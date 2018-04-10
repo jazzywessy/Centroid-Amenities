@@ -34,7 +34,7 @@ navbarPage("Centroid-Amenities", id="nav",
             selectInput("selectAmenities", "Select Amenities:",  choices = c("Childcare","Eldercare") , selected = "Childcare")
           ),
           column(12,
-            numericInput("supplyInput", "Number of Supply:", 
+            numericInput("supplyInput", "Amenity Capacity:", 
                               min = 10, max = 150,
                               value = 20)
           ),
@@ -43,7 +43,7 @@ navbarPage("Centroid-Amenities", id="nav",
           ),
           column(6,
             numericInput("clusterInput", 
-                         "Number of Cluster:", 
+                         "Number of Suggested Amenities:", 
                          min = 3, max = 20,
                          value = 3)
           ),
@@ -60,18 +60,20 @@ navbarPage("Centroid-Amenities", id="nav",
                       #          column(6,
                       #            plotOutput("K_Means", height = 225)
                       #          ),
-                                column(6,
+                                column(6, 
+                                #       h4("Current Accessibility Index"),
                                   plotOutput("CurrentHist", height = 225)
                                 ),
                                 column(6,
+                                #       h4("Improved Accessibility Index"),
                                   plotOutput("AfterHist", height = 225)
                                 ),
                                 column(6,
-                                       h4("Current Avg. Distance"),
+                                       h4("Current Avg. Distance (m)"),
                                   verbatimTextOutput("CurrentAvg")
                                 ),
                                 column(6,
-                                       h4("Improved Avg. Distance"),
+                                       h4("Improved Avg. Distance (m)"),
                                   verbatimTextOutput("AfterAvg")
                                 )
                               )
