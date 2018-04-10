@@ -246,7 +246,7 @@ function(input, output, session) {
                                                                                                 "Subzone: ", subzone_pl$`SUBZONE_N`),
                         group = "Subzone") %>%
             addAwesomeMarkers(data=sayang, icon=icon_centriods_childcare,
-                              group = "Centriod") %>%
+                              group = "Centroid") %>%
             addRasterImage(x = childcare_bw_raster, opacity = 0.5, project = FALSE, group = "Heatmap") %>%
             addCircles(data = GR.acc1, lng= ~lng, lat= ~lat, weight= 1,
                        radius = ~sqrt(GR.acc) * 10,
@@ -257,7 +257,7 @@ function(input, output, session) {
             addScaleBar(position = "bottomleft") %>%
             addLayersControl(position = "topleft",
                              baseGroups = c("Streets", "Light", "Outdoors"),
-                             overlayGroups = c("HDB Kids", "Child Care Centres","Subzone","Centriod","Heatmap","Current Hansen","Suggested Hansen"),
+                             overlayGroups = c("HDB Kids", "Child Care Centres","Subzone","Centroid","Heatmap","Current Hansen","Suggested Hansen"),
                              options = layersControlOptions(collapsed = FALSE)
             )%>% hideGroup(c("HDB Kids","Current Hansen","Suggested Hansen"))
         })
@@ -291,8 +291,8 @@ function(input, output, session) {
           
         })
         
-        output$CurrentAvg <- renderText(mean(GR.acc))
-        output$AfterAvg <- renderText(mean(sayang.acc))
+        output$CurrentAvg <- renderText(mean(GR.d))
+        output$AfterAvg <- renderText(mean(sayang.d))
         
         
       } else if (input$selectAmenities == "Eldercare"){
@@ -435,7 +435,7 @@ function(input, output, session) {
                                                                                                 "Subzone: ", subzone_pl$`SUBZONE_N`),
                         group = "Subzone") %>%
             addAwesomeMarkers(data=sayang2, icon=icon_centriods_eldercare,
-                              group = "Centriod") %>%
+                              group = "Centroid") %>%
             addRasterImage(x = eldercare_bw_raster, opacity = 0.5, project = FALSE, group = "Demand Heatmap") %>%
             addCircles(data = GR.acc1, lng= ~lng, lat= ~lat, weight= 1,
                        radius = ~sqrt(GR.acc) * 10,
@@ -446,7 +446,7 @@ function(input, output, session) {
             addScaleBar(position = "bottomleft") %>%
             addLayersControl(position = "topleft",
                              baseGroups = c("Streets", "Light", "Outdoors"),
-                             overlayGroups = c("HDB Elderly","Elder Care Centres","Subzone","Centriod","Demand Heatmap","Current Hansen","Suggested Hansen"),
+                             overlayGroups = c("HDB Elderly","Elder Care Centres","Subzone","Centroid","Demand Heatmap","Current Hansen","Suggested Hansen"),
                              options = layersControlOptions(collapsed = FALSE)
             )%>% hideGroup(c("HDB Elderly","Current Hansen","Suggested Hansen"))
         })
@@ -480,8 +480,8 @@ function(input, output, session) {
           
         })
         
-        output$CurrentAvg <- renderText(mean(GR.acc))
-        output$AfterAvg <- renderText(mean(sayang.acc))
+        output$CurrentAvg <- renderText(mean(GR.d))
+        output$AfterAvg <- renderText(mean(sayang.d))
         
       }
       

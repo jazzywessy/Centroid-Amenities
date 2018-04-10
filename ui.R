@@ -36,7 +36,7 @@ navbarPage("Centroid-Amenities", id="nav",
           ),
           column(6,
             numericInput("clusterInput", 
-                         "Number of Cluster:", 
+                         "Number of Clusters:", 
                          min = 3, max = 20,
                          value = 3)
           ),
