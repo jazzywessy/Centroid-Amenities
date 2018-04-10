@@ -1,10 +1,7 @@
-packages = c('dplyr', 'sf','sp' , 'rgdal') 
-for (p in packages){
-  if(!require(p, character.only = T)){ 
-    install.packages(p)
-  }
-  library(p,character.only = T) 
-}
+library(dplyr) 
+library(sf) 
+library(sp) 
+library(rgdal)
 
 token <- "pk.eyJ1IjoianNjczI2MDciLCJhIjoicFhiM1hJTSJ9.VBD0_KEXWrrEbW21L0uYGw"
 

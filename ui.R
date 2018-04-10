@@ -1,12 +1,5 @@
-packages = c('leaflet', 'shinythemes') 
-for (p in packages){
-  if(!require(p, character.only = T)){ 
-    install.packages(p)
-  }
-  library(p,character.only = T) 
-}
-
-
+library(leaflet)
+library(shinythemes)
 
 navbarPage("Centroid-Amenities", id="nav",
   theme = shinythemes::shinytheme("united"),

@@ -1,13 +1,18 @@
-
-packages = c('rgdal', 'maptools','spatstat', 'raster','tidyverse','sf','leaflet',
-             'dplyr','rgeos','ClusterR','scales','lattice','flexclust','SpatialAcc','RColorBrewer'
-) 
-for (p in packages){
-  if(!require(p, character.only = T)){ 
-    install.packages(p)
-  }
-  library(p,character.only = T) 
-}
+library(rgdal)
+library(maptools)
+library(spatstat)
+library(raster)
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(dplyr)
+library(rgeos)
+library(ClusterR)
+library(scales)
+library(lattice)
+library(flexclust)
+library(SpatialAcc)
+library(RColorBrewer)
 
 function(input, output, session) {
   ## Interactive Map ###########################################
@@ -240,7 +245,6 @@ function(input, output, session) {
                                                                                                 "Subzone: ", subzone_pl$`SUBZONE_N`),
                         group = "Subzone") %>%
             addAwesomeMarkers(data=ImprovedPlacement, icon=icon_centriods_childcare,
-            addAwesomeMarkers(data=sayang, icon=icon_centriods_childcare,
                               group = "Centroid") %>%
             addRasterImage(x = childcare_bw_raster, opacity = 0.5, project = FALSE, group = "Heatmap") %>%
             addCircles(data = CurrentAmenities.acc1, lng= ~lng, lat= ~lat, weight= 1,
@@ -286,8 +290,8 @@ function(input, output, session) {
           
         })
         
-        output$CurrentAvg <- renderText(mean(GR.d))
-        output$AfterAvg <- renderText(mean(sayang.d))
+        output$CurrentAvg <- renderText(mean(CurrentAmenities.d))
+        output$AfterAvg <- renderText(mean(ImprovedPlacement.d))
         
         
       } else if (input$selectAmenities == "Eldercare"){
@@ -475,8 +479,8 @@ function(input, output, session) {
           
         })
         
-        output$CurrentAvg <- renderText(mean(GR.d))
-        output$AfterAvg <- renderText(mean(sayang.d))
+        output$CurrentAvg <- renderText(mean(CurrentAmenities.d))
+        output$AfterAvg <- renderText(mean(ImprovedPlacement.d))
         
       }
       
