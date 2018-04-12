@@ -44,15 +44,14 @@ navbarPage("Centroid-Amenities", id="nav",
             verbatimTextOutput("value")
           ),
           column(12,
-            #checkboxGroupInput("checkLayers", "Toggle layers to be displayed:",c("Childcare Centres","Eldercare Centres"),""),
             conditionalPanel( condition = "output.subzoneCheck",
                               fluidRow(
-                      #          column(6,
-                      #            plotOutput("SOS", height = 225)
-                      #          ),
-                      #          column(6,
-                      #            plotOutput("K_Means", height = 225)
-                      #          ),
+                               column(6,
+                                 plotOutput("SOS", height = 225)
+                               ),
+                               column(6,
+                                 plotOutput("K_Means", height = 225)
+                               ),
                                 column(6, 
                                 #       h4("Current Accessibility Index"),
                                   plotOutput("CurrentHist", height = 225)
@@ -74,10 +73,6 @@ navbarPage("Centroid-Amenities", id="nav",
           )
         )
       )
-
-      #tags$div(id="cite",
-      #  'Data compiled for ', tags$em('Coming Apart: The State of White America, 1960–2010'), ' by Charles Murray (Crown Forum, 2012).'
-      #)
     )
   ),
 

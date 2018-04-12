@@ -122,7 +122,6 @@ function(input, output, session) {
         CurrentAmenities.d <- SpatialAcc::distance(CurrentAmenities.H_Coords, CurrentAmenities.C_Coords, type = "euclidean")
         CurrentAmenities.d100 <- CurrentAmenities.d / 100000
         
-        # print(CurrentAmenities.d)
         # set limit to 100m no any further than
         CurrentAmenities.acc <- ac(p = subzone_hdb_postal_presch_clean$Total_PreSch_HDB,
                      childcare_geo$supply,
@@ -138,7 +137,6 @@ function(input, output, session) {
           domain = CurrentAmenities.acc
         )
         
-        # print(CurrentAmenities.acc1)
         ## Heatmap ###########################################
         # Transform 
         geometryTest <- st_as_sf(subzone_hdb_postal_presch_clean, coords = c("lng", "lat"),crs = 4326)
@@ -181,7 +179,6 @@ function(input, output, session) {
         
         ImprovedPlacement <- data.frame(ImprovedPlacement)
         
-        # print(ImprovedPlacement)
         ImprovedPlacement$supply <- input$supplyInput
         # ImprovedPlacement$supply <- sample(30:100, nrow(ImprovedPlacement))
         ImprovedPlacement_pl <- LongLatToUTM(as.numeric(as.character(ImprovedPlacement$lng)),as.numeric(as.character(ImprovedPlacement$lat)),48)
@@ -190,7 +187,6 @@ function(input, output, session) {
         ImprovedPlacement.d <- SpatialAcc::distance(CurrentAmenities.H_Coords, ImprovedPlacement.C_Coords, type = "euclidean")
         ImprovedPlacement.d100 <- ImprovedPlacement.d / 100000
         
-        # print(ImprovedPlacement.d)
         # set limit to 100m no any further than
         ImprovedPlacement.acc <- ac(subzone_hdb_postal_presch_clean$Total_PreSch_HDB,
                      ImprovedPlacement$supply,
@@ -205,7 +201,7 @@ function(input, output, session) {
           palette = 'Blues',
           domain = ImprovedPlacement.acc
         )
-        # print(ImprovedPlacement.acc1)
+        
         ImprovedPlacement <- st_as_sf(ImprovedPlacement,
                            coords = c("lng", "lat"),
                            crs = 4326)
@@ -279,14 +275,14 @@ function(input, output, session) {
         output$CurrentHist <- renderPlot({
           
           #Centriods
-          plot(hist(CurrentAmenities.acc), main = paste(input$selectSubzone, " Current Distance"))
+          plot(hist(CurrentAmenities.acc), main = paste(input$selectSubzone,"\n","Current Accessibility Index"))
           
         })
         
         output$AfterHist <- renderPlot({
           
           #Centriods
-          plot(hist(ImprovedPlacement.acc), main = paste(input$selectSubzone, " Improved Distance"))
+          plot(hist(ImprovedPlacement.acc), main = paste(input$selectSubzone,"\n","Improved Accessibility Index"))
           
         })
         
@@ -316,7 +312,6 @@ function(input, output, session) {
         CurrentAmenities.d <- SpatialAcc::distance(CurrentAmenities.H_Coords, CurrentAmenities.C_Coords, type = "euclidean")
         CurrentAmenities.d100 <- CurrentAmenities.d / 100000
         
-        # print(CurrentAmenities.d)
         # set limit to 100m no any further than
         CurrentAmenities.acc <- ac(p = subzone_hdb_postal_elder_clean$Total_Elder_HDB,
                      eldercare_geo$supply,
@@ -370,16 +365,14 @@ function(input, output, session) {
         
         ImprovedPlacement2 <- data.frame(ImprovedPlacement2)
         
-        # print(ImprovedPlacement)
         ImprovedPlacement2$supply <- input$supplyInput
-        # ImprovedPlacement$supply <- sample(30:100, nrow(ImprovedPlacement))
+        
         ImprovedPlacement_pl <- LongLatToUTM(as.numeric(as.character(ImprovedPlacement2$lng)),as.numeric(as.character(ImprovedPlacement2$lat)),48)
         ImprovedPlacement.C_Coords <-cbind(ImprovedPlacement_pl$X,ImprovedPlacement_pl$Y)
         
         ImprovedPlacement.d <- SpatialAcc::distance(CurrentAmenities.H_Coords, ImprovedPlacement.C_Coords, type = "euclidean")
         ImprovedPlacement.d100 <- ImprovedPlacement.d / 100000
         
-        # print(ImprovedPlacement.d)
         # set limit to 100m no any further than
         ImprovedPlacement.acc <- ac(subzone_hdb_postal_elder_clean$Total_Elder_HDB,
                          ImprovedPlacement2$supply,
@@ -468,14 +461,14 @@ function(input, output, session) {
         output$CurrentHist <- renderPlot({
           
           #Centriods
-          plot(hist(CurrentAmenities.acc), main = paste(input$selectSubzone, " Current Amenities"))
+          plot(hist(CurrentAmenities.acc), main = paste(input$selectSubzone, "\n", " Current Amenities Index"))
           
         })
         
         output$AfterHist <- renderPlot({
           
           #Centriods
-          plot(hist(ImprovedPlacement.acc), main = paste(input$selectSubzone, " Suggested Amenities"))
+          plot(hist(ImprovedPlacement.acc), main = paste(input$selectSubzone, "\n", " Suggested Amenities Index"))
           
         })
         
