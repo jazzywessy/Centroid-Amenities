@@ -1,3 +1,9 @@
+#############################################################
+## @author  Jazreel Siew (https://github.com/jazzywessy/)
+## @version 1.0 04/13/18
+## @description This is a IS415 GeoSpatial Analytics for Business Intelligence Project (https://wiki.smu.edu.sg/1718t2is415g1/Main_Page)
+#############################################################
+  
 library(rgdal)
 library(maptools)
 library(spatstat)
@@ -504,6 +510,19 @@ function(input, output, session) {
         options = list(columnDefs = list(list(targets = 8,render = JS("function(data, type, row, meta) {","return type === 'display' && data.length > 10 ?","'<span title=\"' + data + '\">' + data.substr(0, 8) + '...</span>' : data;","}"))))
         )
       })
+      
+    }else if(input$selectTable == "eldercare"){
+      
+      eldercareTable <- eldercare %>%
+        dplyr:::select(`OBJECTID`,`ADDRESSPOS`, `ADDRESSSTR`,`NAME`,`FMEL_UPD_D`)
+      
+      output$tableShow = DT::renderDataTable({
+        DT::datatable(eldercareTable,
+                      escape  = F,
+                      options = list(columnDefs = list(list(targets = 6,render = JS("function(data, type, row, meta) {","return type === 'display' && data.length > 10 ?","'<span title=\"' + data + '\">' + data.substr(0, 8) + '...</span>' : data;","}"))))
+        )
+      })
+      
     }else if(input$selectTable == "subzone_dwelling_type"){
       
       subzone_dwelling_type_table <- subzone_dwelling_type %>% st_set_geometry(NULL) %>%
@@ -515,6 +534,7 @@ function(input, output, session) {
                       options = list(columnDefs = list(list(targets = 8,render = JS("function(data, type, row, meta) {","return type === 'display' && data.length > 10 ?","'<span title=\"' + data + '\">' + data.substr(0, 8) + '...</span>' : data;","}"))))
         )
       })
+      
     }
   }, ignoreInit = TRUE, ignoreNULL = TRUE)
   

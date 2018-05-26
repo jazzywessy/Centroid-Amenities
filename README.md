@@ -14,5 +14,7 @@ Code Credit: [Jazreel Siew] (https://github.com/jazzywessy/) (https://www.linked
 Template Credit:
 [Mine Cetinkaya-Rundel] (https://github.com/mine-cetinkaya-rundel)
 
+Data Credit:
+[Data.gov.sg] (https://data.gov.sg)
 
 This is a IS415  GeoSpatial Analytics for Business Intelligence Project

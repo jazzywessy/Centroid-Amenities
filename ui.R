@@ -1,3 +1,9 @@
+#############################################################
+## @author  Jazreel Siew (https://github.com/jazzywessy/)
+## @version 1.0 04/13/18
+## @description This is a IS415 GeoSpatial Analytics for Business Intelligence Project (https://wiki.smu.edu.sg/1718t2is415g1/Main_Page)
+#############################################################
+
 library(leaflet)
 library(shinythemes)
 
@@ -81,6 +87,7 @@ navbarPage("Centroid-Amenities", id="nav",
       column(12,
         selectInput("selectTable", "Select Table:",  c("Aged 0 to 4 living in HDB by postal code" = "children_per_HDB",
                                                        "Child Care Services" = "childcare",
+                                                       "Elder Care Services" = "eldercare",
                                                        "Singapore Residents by Subzone and Type of Dwelling, June 2016" = "subzone_dwelling_type") , selected = "children_per_HDB")
       )
     ),

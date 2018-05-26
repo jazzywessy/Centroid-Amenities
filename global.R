@@ -1,3 +1,9 @@
+#############################################################
+## @author  Jazreel Siew (https://github.com/jazzywessy/)
+## @version 1.0 04/13/18
+## @description This is a IS415 GeoSpatial Analytics for Business Intelligence Project (https://wiki.smu.edu.sg/1718t2is415g1/Main_Page)
+#############################################################
+
 library(dplyr) 
 library(sf) 
 library(sp) 
@@ -145,7 +151,7 @@ subzone_hdb_postal_elder_clean_unfiltered <- subzone_hdb_postal_elder %>%
   mutate("Total_Elder_HDB_Scale" = scale(`Total_Elder_HDB`) )%>%
   dplyr:::select(`POSTAL`,`SUBZONE_N`, `PLN_AREA_N`,`1&2Room_Elder_HDB`,`3Room_Elder_HDB`,`4Room_Elder_HDB`,`5Room_Elder_HDB`,`lng`,`lat`,`Total_Elder_HDB`,`Total_Elder_HDB_Scale`,`TOTAL.x`,`HDB`,`Elder`,`Elder_HDB`)
 
-# Function
+# Function to remove geometry
 st_drop_geometry <- function(x) {
   if(inherits(x,"sf")) {
     x <- st_set_geometry(x, NULL)
@@ -154,6 +160,7 @@ st_drop_geometry <- function(x) {
   return(x)
 }
 
+# Function to change lat lon to UTM format
 LongLatToUTM<-function(x,y,zone){
   xy <- data.frame(ID = 1:length(x), X = x, Y = y)
   coordinates(xy) <- c("X", "Y")
